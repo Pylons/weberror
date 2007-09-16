@@ -1,7 +1,7 @@
 import sys
 import os
-from paste.exceptions.reporter import *
-from paste.exceptions import collector
+from weberror.exceptions.reporter import *
+from weberror.exceptions import collector
 
 def setup_file(fn, content=None):
     fn = os.path.join(os.path.dirname(__file__), 'reporter_output', fn)

@@ -1,5 +1,4 @@
-from paste.exceptions import formatter
-from paste.exceptions import collector
+from weberror.exceptions import formatter, collector
 from paste.util.quoting import strip_html
 import sys
 import os

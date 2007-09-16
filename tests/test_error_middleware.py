@@ -1,5 +1,5 @@
 from paste.fixture import *
-from paste.exceptions.errormiddleware import ErrorMiddleware
+from weberror.exceptions.errormiddleware import ErrorMiddleware
 from paste import lint
 from paste.util.quoting import strip_html
 #
@@ -74,7 +74,7 @@ def test_makes_exception():
     assert 'bad_app() takes no arguments (2 given' in res
     assert 'iterator = application(environ, start_response_wrapper)' in res
     assert 'paste.lint' in res
-    assert 'paste.exceptions.errormiddleware' in res
+    assert 'weberror.exceptions.errormiddleware' in res
 
 def test_start_res():
     res = do_request(start_response_app)
