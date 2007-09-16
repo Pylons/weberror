@@ -8,7 +8,18 @@ setup(name='WebError',
       description="Web Error handling and exception catching",
       long_description="""\
 """,
-      classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+      classifiers=[
+          "Development Status :: 5 - Production/Stable",
+          "Intended Audience :: Developers",
+          "License :: OSI Approved :: MIT License",
+          "Programming Language :: Python",
+          "Topic :: Internet :: WWW/HTTP",
+          "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+          "Topic :: Software Development :: Libraries :: Python Modules",
+          "Topic :: Internet :: WWW/HTTP :: WSGI",
+          "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+          "Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware",
+      ],
       keywords='wsgi',
       author='Ben Bangert, Ian Bicking, Mark Ramm',
       author_email='',
@@ -21,6 +32,9 @@ setup(name='WebError',
           # -*- Extra requirements: -*-
       ],
       entry_points="""
-      # -*- Entry points: -*-
+      [paste.filter_app_factory]
+      error_catcher = weberror.exceptions.errormiddleware:make_error_middleware
+      cgitb = weberror.cgitb_catcher:make_cgitb_middleware
+      evalerror = weberror.evalexception.middleware:make_eval_exception
       """,
       )
