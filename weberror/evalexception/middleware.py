@@ -1,11 +1,8 @@
-# (c) 2005 Ian Bicking and contributors; written for Paste (http://pythonpaste.org)
-# Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
-"""
-Exception-catching middleware that allows interactive debugging.
+"""Exception-catching middleware that allows interactive debugging.
 
 This middleware catches all unexpected exceptions.  A normal
 traceback, like produced by
-``paste.exceptions.errormiddleware.ErrorMiddleware`` is given, plus
+``weberror.exceptions.errormiddleware.ErrorMiddleware`` is given, plus
 controls to see local variables and evaluate expressions in a local
 context.
 
@@ -23,6 +20,7 @@ Javascripty), since if you use innerHTML it'll kill your browser.  You
 can look for the header X-Debug-URL in your 500 responses if you want
 to see the full debuggable traceback.  Also, this URL is printed to
 ``wsgi.errors``, so you can open it up in another browser window.
+
 """
 import sys
 import os
@@ -33,7 +31,7 @@ import pprint
 import itertools
 import time
 import re
-from paste.exceptions import errormiddleware, formatter, collector
+from weberror.exceptions import errormiddleware, formatter, collector
 from paste import wsgilib
 from paste import urlparser
 from paste import httpexceptions
@@ -156,10 +154,10 @@ def get_debug_count(environ):
     """
     Return the unique debug count for the current request
     """
-    if 'paste.evalexception.debug_count' in environ:
-        return environ['paste.evalexception.debug_count']
+    if 'weberror.evalexception.debug_count' in environ:
+        return environ['weberror.evalexception.debug_count']
     else:
-        environ['paste.evalexception.debug_count'] = next = debug_counter.next()
+        environ['weberror.evalexception.debug_count'] = next = debug_counter.next()
         return next
 
 class EvalException(object):
@@ -179,7 +177,7 @@ class EvalException(object):
         assert not environ['wsgi.multiprocess'], (
             "The EvalException middleware is not usable in a "
             "multi-process environment")
-        environ['paste.evalexception'] = self
+        environ['weberror.evalexception'] = self
         if environ.get('PATH_INFO', '').startswith('/_debug/'):
             return self.debug(environ, start_response)
         else:
