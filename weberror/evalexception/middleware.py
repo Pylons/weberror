@@ -606,4 +606,3 @@ def make_eval_exception(app, global_conf, xmlhttp_key=None):
     if xmlhttp_key is None:
         xmlhttp_key = global_conf.get('xmlhttp_key', '_')
     return EvalException(app, xmlhttp_key=xmlhttp_key)
-

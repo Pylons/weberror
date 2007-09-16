@@ -240,12 +240,14 @@ class CatchingIter(object):
 
 
 class Supplement(object):
-
+    """This is a supplement used to display standard WSGI information 
+    in the traceback.
+    
+    Additional configuration information can be added under a 
+    Configuration section by populating the environ['weberror.config']
+    variable with a dictionary to include.
+    
     """
-    This is a supplement used to display standard WSGI information in
-    the traceback.
-    """
-
     def __init__(self, middleware, environ):
         self.middleware = middleware
         self.environ = environ
@@ -273,8 +275,8 @@ class Supplement(object):
                                        'wsgi.run_once')])
         wsgi_vars['wsgi process'] = self.process_combos[proc_desc]
         wsgi_vars['application'] = self.middleware.application
-        if 'paste.config' in self.environ:
-            data[('extra', 'Configuration')] = dict(self.environ['paste.config'])
+        if 'weberror.config' in self.environ:
+            data[('extra', 'Configuration')] = dict(self.environ['weberror.config'])
         return data
 
     process_combos = {
