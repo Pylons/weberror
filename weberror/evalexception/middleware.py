@@ -31,14 +31,16 @@ import pprint
 import itertools
 import time
 import re
-from weberror.exceptions import errormiddleware, formatter, collector
+
 from paste import wsgilib
 from paste import urlparser
 from paste import httpexceptions
 from paste import registry
 from paste import request
 from paste import response
+
 import evalcontext
+from weberror.exceptions import errormiddleware, formatter, collector
 
 limit = 200
 
@@ -49,6 +51,7 @@ def html_quote(v):
     if v is None:
         return ''
     return cgi.escape(str(v), 1)
+
 
 def preserve_whitespace(v, quote=True):
     """
@@ -65,10 +68,12 @@ def preserve_whitespace(v, quote=True):
     v = re.sub(r'^()( +)', _repl_nbsp, v)
     return '<code>%s</code>' % v
 
+
 def _repl_nbsp(match):
     if len(match.group(2)) == 1:
         return '&nbsp;'
     return match.group(1) + '&nbsp;' * (len(match.group(2))-1) + ' '
+
 
 def simplecatcher(application):
     """
@@ -88,6 +93,7 @@ def simplecatcher(application):
             return ['<h3>Error</h3><pre>%s</pre>'
                     % html_quote(res)]
     return simplecatcher_app
+
 
 def wsgiapp():
     """
@@ -123,6 +129,7 @@ def wsgiapp():
         return wsgiapp_wrapper
     return decorator
 
+
 def get_debug_info(func):
     """
     A decorator (meant to be used under ``wsgiapp()``) that resolves
@@ -148,7 +155,8 @@ def get_debug_info(func):
             form['headers']['status'] = '500 Server Error'
             return '<html>There was an error: %s</html>' % html_quote(e)
     return debug_info_replacement
-            
+
+
 debug_counter = itertools.count(int(time.time()))
 def get_debug_count(environ):
     """
@@ -160,11 +168,13 @@ def get_debug_count(environ):
         environ['weberror.evalexception.debug_count'] = next = debug_counter.next()
         return next
 
+
 class EvalException(object):
 
-    def __init__(self, application, global_conf=None,
-                 xmlhttp_key=None):
+    def __init__(self, application, global_conf=None, error_template=None,
+                 xmlhttp_key=None, media_paths=None):
         self.application = application
+        self.error_template = error_template
         self.debug_infos = {}
         if xmlhttp_key is None:
             if global_conf is None:
@@ -172,6 +182,7 @@ class EvalException(object):
             else:
                 xmlhttp_key = global_conf.get('xmlhttp_key', '_')
         self.xmlhttp_key = xmlhttp_key
+        self.media_paths = media_paths or {}
 
     def __call__(self, environ, start_response):
         assert not environ['wsgi.multiprocess'], (
@@ -199,12 +210,16 @@ class EvalException(object):
         return method(environ, start_response)
 
     def media(self, environ, start_response):
-        """
-        Static path where images and other files live
-        """
-        app = urlparser.StaticURLParser(
-            os.path.join(os.path.dirname(__file__), 'media'))
-        return app(environ, start_response)
+        """Static path where images and other files live"""
+        first_part = request.path_info_split(environ['PATH_INFO'])[0]
+        if first_part in self.media_paths:
+            request.path_info_pop(environ)
+            app = urlparser.StaticURLParser(self.media_paths[first_part])
+            return app(environ, start_response)
+        else:
+            app = urlparser.StaticURLParser(
+                os.path.join(os.path.dirname(__file__), 'media'))
+            return app(environ, start_response)
     media.exposed = True
 
     def mochikit(self, environ, start_response):
@@ -330,7 +345,7 @@ class EvalException(object):
 
             exc_data = collector.collect_exception(*exc_info)
             debug_info = DebugInfo(count, exc_info, exc_data, base_path,
-                                   environ, view_uri)
+                                   environ, view_uri, self.error_template)
             assert count not in self.debug_infos
             self.debug_infos[count] = debug_info
 
@@ -358,15 +373,17 @@ class EvalException(object):
             debug_mode=True,
             simple_html_error=simple_html_error)
 
+
 class DebugInfo(object):
 
     def __init__(self, counter, exc_info, exc_data, base_path,
-                 environ, view_uri):
+                 environ, view_uri, error_template):
         self.counter = counter
         self.exc_data = exc_data
         self.base_path = base_path
         self.environ = environ
         self.view_uri = view_uri
+        self.error_template = error_template
         self.created = time.time()
         self.exc_type, self.exc_value, self.tb = exc_info
         __exception_formatter__ = 1
@@ -380,7 +397,7 @@ class DebugInfo(object):
             self.frames.append(tb)
             tb = tb.tb_next
             n += 1
-
+    
     def json(self):
         """Return the JSON-able representation of this object"""
         return {
@@ -427,6 +444,7 @@ class DebugInfo(object):
             '</script>\n'
             % (base_path, base_path, base_path, self.counter))
 
+
 class EvalHTMLFormatter(formatter.HTMLFormatter):
 
     def __init__(self, base_path, counter, **kw):
@@ -443,6 +461,7 @@ class EvalHTMLFormatter(formatter.HTMLFormatter):
                 '<img src="%s/_debug/media/plus.jpg" border=0 width=9 '
                 'height=9> &nbsp; &nbsp;</a>'
                 % (frame.tbid, self.base_path))
+
 
 def make_table(items):
     if isinstance(items, dict):
@@ -476,6 +495,7 @@ def make_table(items):
                        preserve_whitespace(value, quote=False)))
     return '<table>%s</table>' % (
         '\n'.join(rows))
+
 
 def format_eval_html(exc_data, base_path, counter):
     short_formatter = EvalHTMLFormatter(
@@ -519,6 +539,7 @@ def format_eval_html(exc_data, base_path, counter):
     </div>
     """ % (short_er, full_traceback_html, cgi.escape(text_er))
 
+
 def make_repost_button(environ):
     url = request.construct_url(environ)
     if environ['REQUEST_METHOD'] == 'GET':
@@ -547,7 +568,7 @@ def make_repost_button(environ):
 <input type="submit" value="Re-POST Page">
 </form>''' % (url, '\n'.join(fields))
 """
-    
+
 
 def input_form(tbid, debug_info):
     return '''
@@ -569,6 +590,7 @@ def input_form(tbid, debug_info):
 </form>
  ''' % {'tbid': tbid}
 
+
 error_template = '''
 <html>
 <head>
@@ -589,6 +611,7 @@ error_template = '''
 </body>
 </html>
 '''
+
 
 def make_eval_exception(app, global_conf, xmlhttp_key=None):
     """
