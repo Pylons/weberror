@@ -2,10 +2,6 @@ from paste.fixture import *
 from weberror.exceptions.errormiddleware import ErrorMiddleware
 from paste import lint
 from paste.util.quoting import strip_html
-#
-# For some strange reason, these 4 lines cannot be removed or the regression
-# test breaks; is it counting the number of lines in the file somehow?
-#
 
 def do_request(app, expect_status=500):
     app = lint.middleware(app)
@@ -82,14 +78,17 @@ def test_start_res():
     #print res
     assert 'ValueError: hi' in res
     assert 'test_error_middleware' in res
-    assert ':49 in start_response_app' in res
+	# This assertion assumes that the start_response_app returns on line 45
+	# of this file.
+    assert ':45 in start_response_app' in res
 
 def test_after_start():
     res = do_request(after_start_response_app, 200)
     res = strip_html(str(res))
-    #print res
     assert 'ValueError: error2' in res
-    assert ':53' in res
+	# This assertion assumes that the start_response_app returns on line 45
+	# of this file.
+    assert ':49' in res
 
 def test_iter_app():
     res = do_request(lint.middleware(iter_app), 200)
