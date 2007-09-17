@@ -174,11 +174,15 @@ class InvalidTemplate(Exception):
 
 
 class EvalException(object):
+    """Handles capturing an exception and turning it into an interactive
+    exception explorer"""
     def __init__(self, application, global_conf=None, error_template=None,
-                 xmlhttp_key=None, media_paths=None, **params):
+                 xmlhttp_key=None, media_paths=None, 
+                 templating_formatters=None, **params):
         self.application = application
         self.error_template = error_template
         self.debug_infos = {}
+        self.templating_formatters = templating_formatters or []
         if xmlhttp_key is None:
             if global_conf is None:
                 xmlhttp_key = '_'
@@ -359,7 +363,8 @@ class EvalException(object):
 
             exc_data = collector.collect_exception(*exc_info)
             debug_info = DebugInfo(count, exc_info, exc_data, base_path,
-                                   environ, view_uri, self.error_template)
+                                   environ, view_uri, self.error_template,
+                                   self.templating_formatters)
             assert count not in self.debug_infos
             self.debug_infos[count] = debug_info
 
@@ -391,7 +396,7 @@ class EvalException(object):
 class DebugInfo(object):
 
     def __init__(self, counter, exc_info, exc_data, base_path,
-                 environ, view_uri, error_template):
+                 environ, view_uri, error_template, templating_formatters):
         self.counter = counter
         self.exc_data = exc_data
         self.base_path = base_path
