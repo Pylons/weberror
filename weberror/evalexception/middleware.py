@@ -34,7 +34,6 @@ import re
 
 from paste import wsgilib
 from paste import urlparser
-from paste import httpexceptions
 from paste import registry
 from paste import request
 from paste import response
@@ -43,6 +42,20 @@ import evalcontext
 from weberror.exceptions import errormiddleware, formatter, collector
 
 limit = 200
+
+FORBIDDEN_MSG = """\
+403 Forbidden
+Access was denied to this resource.
+%r not allowed
+
+"""
+
+NOT_FOUND_MSG = """\
+404 Not Found
+The resource could not be found.
+%r not fond when parsing %r
+
+"""
 
 def html_quote(v):
     """
@@ -122,8 +135,7 @@ def wsgiapp():
                 status = headers.pop('status')
                 start_response(status, headers.headeritems())
                 return [res]
-            app = httpexceptions.make_middleware(application)
-            app = simplecatcher(app)
+            app = simplecatcher(application)
             return app(environ, start_response)
         wsgiapp_wrapper.exposed = True
         return wsgiapp_wrapper
@@ -217,14 +229,12 @@ class EvalException(object):
         next_part = request.path_info_pop(environ)
         method = getattr(self, next_part, None)
         if not method:
-            exc = httpexceptions.HTTPNotFound(
-                '%r not found when parsing %r'
-                % (next_part, wsgilib.construct_url(environ)))
-            return exc.wsgi_application(environ, start_response)
+            start_response('404 Not Found', [('content-type', 'text/plain')])
+            return NOT_FOUND_MSG % (next_part, wsgilib.construct_url(environ))
         if not getattr(method, 'exposed', False):
-            exc = httpexceptions.HTTPForbidden(
-                '%r not allowed' % next_part)
-            return exc.wsgi_application(environ, start_response)
+            start_response('403 Forbidden', [('content-type', 'text/plain')])
+            return FORBIDDEN_MSG % next_part
+            
         return method(environ, start_response)
 
     def media(self, environ, start_response):
@@ -404,6 +414,7 @@ class DebugInfo(object):
         self.view_uri = view_uri
         self.error_template = error_template
         self.created = time.time()
+        self.templating_formatters = templating_formatters
         self.exc_type, self.exc_value, self.tb = exc_info
         __exception_formatter__ = 1
         self.frames = []
@@ -440,14 +451,40 @@ class DebugInfo(object):
         return self.content()
 
     def content(self):
-        html = format_eval_html(self.exc_data, self.base_path, self.counter)
+        html, extra_data = format_eval_html(self.exc_data, self.base_path, self.counter)
         head_html = (formatter.error_css + formatter.hide_display_js)
         head_html += self.eval_javascript()
         repost_button = make_repost_button(self.environ)
-        page = error_template % {
+        template_data = '<p>No Template information available.</p>'
+        tab = 'traceback_data'
+        
+        for formatter_ in self.templating_formatters:
+            result = formatter_(self.exc_value)
+            if result:
+                tab = 'template_data'
+                template_data = result
+                break
+
+        head_html = (error_head_template % {'prefix':self.base_path}) + head_html
+
+        traceback_data = error_traceback_template % {
+            'prefix':self.base_path,
+            'body':html,
             'repost_button': repost_button or '',
-            'head_html': head_html,
-            'body': html}
+        }
+
+        extra_data = """<h1 class="first"><a name="content"></a>Extra Data</h1>""" + \
+            '\n'.join(extra_data)
+        page = self.error_template % {
+            'head': head_html,
+            'traceback_data': traceback_data,
+            'extra_data':extra_data,
+            'template_data':template_data.replace('<h2>',
+                                              '<h1 class="first">').replace('</h2>',
+                                                                            '</h1>'),
+            'set_tab':tab,
+            'prefix':self.base_path,
+            }
         return [page]
 
     def eval_javascript(self):
@@ -521,42 +558,105 @@ def format_eval_html(exc_data, base_path, counter):
         base_path=base_path,
         counter=counter,
         include_reusable=False)
-    short_er = short_formatter.format_collected_data(exc_data)
+    short_er, extra_data = short_formatter.format_collected_data(exc_data)
+    short_text_er = formatter.format_text(exc_data, show_extra_data=False)
     long_formatter = EvalHTMLFormatter(
         base_path=base_path,
         counter=counter,
         show_hidden_frames=True,
         show_extra_data=False,
         include_reusable=False)
-    long_er = long_formatter.format_collected_data(exc_data)
-    text_er = formatter.format_text(exc_data, show_hidden_frames=True)
+    long_er, extra_data_none = long_formatter.format_collected_data(exc_data)
+    long_text_er = formatter.format_text(exc_data, show_hidden_frames=True,
+                                         show_extra_data=False)
+    extra_data_text = format_extra_data_text(exc_data)
+    if extra_data_text:
+        extra_data.append("""
+        <br />
+        <div id="util-link">
+            <script type="text/javascript">
+            show_button('extra_data_text', 'text version')
+            </script>
+        </div>
+        <div id="extra_data_text" class="hidden-data">
+        <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
+        </div>
+        """ % (len(extra_data_text.splitlines()), extra_data_text))
+    
     if short_formatter.filter_frames(exc_data.frames) != \
         long_formatter.filter_frames(exc_data.frames):
         # Only display the full traceback when it differs from the
         # short version
+        long_text_er = cgi.escape(long_text_er)
         full_traceback_html = """
-    <br>
-    <script type="text/javascript">
-    show_button('full_traceback', 'full traceback')
-    </script>
-    <div id="full_traceback" class="hidden-data">
-    %s
-    </div>
-        """ % long_er
+        <br />
+        <div id="util-link">
+            <script type="text/javascript">
+            show_button('full_traceback', 'full traceback')
+            </script>
+        </div>
+        <div id="full_traceback" class="hidden-data">
+        %s
+            <br />
+            <div id="util-link">
+                <script type="text/javascript">
+                show_button('long_text_version', 'full traceback text version')
+                </script>
+            </div>
+            <div id="long_text_version" class="hidden-data">
+            <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
+            </div>
+        </div>
+        """ % (long_er, len(long_text_er.splitlines()), long_text_er)
     else:
         full_traceback_html = ''
-    
+
+    short_text_er = cgi.escape(short_text_er)
     return """
+    <style type="text/css">
+            #util-link a, #util-link a:link, #util-link a:visited,
+            #util-link a:active {
+                border-bottom: 2px outset #aaa
+            }
+    </style>
     %s
-    %s
-    <br>
-    <script type="text/javascript">
-    show_button('text_version', 'text version')
-    </script>
-    <div id="text_version" class="hidden-data">
-    <textarea style="width: 100%%" rows=10 cols=60>%s</textarea>
+    <br />
+    <br />
+    <div id="util-link">
+        <script type="text/javascript">
+        show_button('short_text_version', 'text version')
+        </script>
     </div>
-    """ % (short_er, full_traceback_html, cgi.escape(text_er))
+    <div id="short_text_version" class="hidden-data">
+    <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
+    </div>
+    %s
+    """ % (short_er, len(short_text_er.splitlines()), short_text_er,
+           full_traceback_html), extra_data
+
+def format_extra_data_text(exc_data):
+    """ Return a text representation of the 'extra_data' dict when one exists """
+    extra_data_text = ''
+    if not exc_data.extra_data:
+        return extra_data_text
+
+    text_formatter = formatter.TextFormatter()
+    by_title = {}
+    for name, value_list in exc_data.extra_data.items():
+        if isinstance(name, tuple):
+            importance, title = name
+        else:
+            importance, title = 'normal', name
+        if importance != 'extra':
+            continue
+        for value in value_list:
+            by_title[title] = text_formatter.format_extra_data(importance, title, value)
+
+    titles = by_title.keys()
+    titles.sort()
+    for title in titles:
+        extra_data_text += by_title[title]
+    return extra_data_text
 
 
 def make_repost_button(environ):
@@ -630,6 +730,63 @@ error_template = '''
 </body>
 </html>
 '''
+
+error_head_template = """
+<style type="text/css">
+        .red {
+            color:#FF0000;
+        }
+        .bold {
+            font-weight: bold;
+        }
+</style>
+<script type="text/javascript">
+
+if (document.images)
+{
+  pic1= new Image(100,25); 
+  pic1.src="%(prefix)s/_debug/media/pylons/img/tab-yellow.png"; 
+}
+
+function switch_display(id) {
+    ids = ['extra_data', 'template_data', 'traceback_data']
+    for (i in ids){
+        part = ids[i] 
+        var el = document.getElementById(part);
+        el.className = "hidden-data";
+        var el = document.getElementById(part+'_tab');
+        el.className = "not-active";
+        var el = document.getElementById(part+'_link');
+        el.className = "not-active";
+    }
+    var el = document.getElementById(id);
+    el.className = "active";
+    var el = document.getElementById(id+'_link');
+    el.className = "active";
+    var el = document.getElementById(id+'_tab');
+    el.className = "active";
+}   
+</script>
+"""
+
+
+error_traceback_template = """\
+<div style="float: left; width: 100%%; padding-bottom: 20px;">
+<h1 class="first"><a name="content"></a>Error Traceback</h1>
+<div id="error-area" style="display: none; background-color: #600; color: #fff; border: 2px solid black">
+<button onclick="return clearError()">clear this</button>
+<div id="error-container"></div>
+<button onclick="return clearError()">clear this</button>
+</div>
+%(body)s
+<br />
+<div class="highlight" style="padding: 20px;">
+<b>Extra Features</b>
+<table border="0">
+<tr><td>&gt;&gt;</td><td>Display the lines of code near each part of the traceback</td></tr>
+<tr><td><img src="%(prefix)s/_debug/media/plus.jpg" /></td><td>Show a debug prompt to allow you to directly debug the code at the traceback</td></tr>
+</table>
+</div>%(repost_button)s"""
 
 
 def make_eval_exception(app, global_conf, xmlhttp_key=None):
