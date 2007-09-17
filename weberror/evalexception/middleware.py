@@ -34,7 +34,6 @@ import re
 
 from paste import wsgilib
 from paste import urlparser
-from paste import httpexceptions
 from paste import registry
 from paste import request
 from paste import response
@@ -43,6 +42,20 @@ import evalcontext
 from weberror.exceptions import errormiddleware, formatter, collector
 
 limit = 200
+
+FORBIDDEN_MSG = """\
+403 Forbidden
+Access was denied to this resource.
+%r not allowed
+
+"""
+
+NOT_FOUND_MSG = """\
+404 Not Found
+The resource could not be found.
+%r not fond when parsing %r
+
+"""
 
 def html_quote(v):
     """
@@ -122,8 +135,7 @@ def wsgiapp():
                 status = headers.pop('status')
                 start_response(status, headers.headeritems())
                 return [res]
-            app = httpexceptions.make_middleware(application)
-            app = simplecatcher(app)
+            app = simplecatcher(application)
             return app(environ, start_response)
         wsgiapp_wrapper.exposed = True
         return wsgiapp_wrapper
@@ -199,14 +211,12 @@ class EvalException(object):
         next_part = request.path_info_pop(environ)
         method = getattr(self, next_part, None)
         if not method:
-            exc = httpexceptions.HTTPNotFound(
-                '%r not found when parsing %r'
-                % (next_part, wsgilib.construct_url(environ)))
-            return exc.wsgi_application(environ, start_response)
+            start_response('404 Not Found', [('content-type', 'text/plain')])
+            return NOT_FOUND_MSG % (next_part, wsgilib.construct_url(environ))
         if not getattr(method, 'exposed', False):
-            exc = httpexceptions.HTTPForbidden(
-                '%r not allowed' % next_part)
-            return exc.wsgi_application(environ, start_response)
+            start_response('403 Forbidden', [('content-type', 'text/plain')])
+            return FORBIDDEN_MSG % next_part
+            
         return method(environ, start_response)
 
     def media(self, environ, start_response):
