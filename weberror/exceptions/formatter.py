@@ -285,19 +285,17 @@ class HTMLFormatter(TextFormatter):
         lines.append(exc_info)
         for name in 'normal', 'supplemental':
             lines.extend([value for n, value in data_by_importance[name]])
+        
+        extra_data = []
         if data_by_importance['extra']:
-            lines.append(
-                '<script type="text/javascript">\nshow_button(\'extra_data\', \'extra data\');\n</script>\n' +
-                '<div id="extra_data" class="hidden-data">\n')
-            lines.extend([value for n, value in data_by_importance['extra']])
-            lines.append('</div>')
+            extra_data.extend([value for n, value in data_by_importance['extra']])
         text = self.format_combine_lines(lines)
         if self.include_reusable:
-            return error_css + hide_display_js + text
+            return error_css + hide_display_js + text, extra_data
         else:
             # Usually because another error is already on this page,
             # and so the js & CSS are unneeded
-            return text
+            return text, extra_data
 
     def zebra_table(self, title, rows, table_class="variables"):
         if isinstance(rows, dict):
