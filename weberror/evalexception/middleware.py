@@ -32,11 +32,9 @@ import itertools
 import time
 import re
 
-from paste import wsgilib
 from paste import urlparser
 from paste import registry
 from paste import request
-from paste import response
 
 import evalcontext
 from weberror.exceptions import errormiddleware, formatter, collector
@@ -124,16 +122,17 @@ def wsgiapp():
                 environ, start_response = args
                 args = []
             def application(environ, start_response):
-                form = wsgilib.parse_formvars(environ,
+                form = request.parse_formvars(environ,
                                               include_get_vars=True)
-                headers = response.HeaderDict(
-                    {'content-type': 'text/html',
-                     'status': '200 OK'})
+                status = '200 OK'
                 form['environ'] = environ
-                form['headers'] = headers
-                res = func(*args, **form.mixed())
-                status = headers.pop('status')
-                start_response(status, headers.headeritems())
+                try:
+                    res = func(*args, **form.mixed())
+                except ValueError, ve:
+                    status = '500 Server Error'
+                    res = '<html>There was an error: %s</html>' % \
+                        html_quote(ve)
+                start_response(status, [('content-type', 'text/html')])
                 return [res]
             app = simplecatcher(application)
             return app(environ, start_response)
@@ -149,23 +148,19 @@ def get_debug_info(func):
     error if it can't be found).
     """
     def debug_info_replacement(self, **form):
+        if 'debugcount' not in form:
+            raise ValueError('You must provide a debugcount parameter')
+        debugcount = form.pop('debugcount')
         try:
-            if 'debugcount' not in form:
-                raise ValueError('You must provide a debugcount parameter')
-            debugcount = form.pop('debugcount')
-            try:
-                debugcount = int(debugcount)
-            except ValueError:
-                raise ValueError('Bad value for debugcount')
-            if debugcount not in self.debug_infos:
-                raise ValueError(
-                    'Debug %s no longer found (maybe it has expired?)'
-                    % debugcount)
-            debug_info = self.debug_infos[debugcount]
-            return func(self, debug_info=debug_info, **form)
-        except ValueError, e:
-            form['headers']['status'] = '500 Server Error'
-            return '<html>There was an error: %s</html>' % html_quote(e)
+            debugcount = int(debugcount)
+        except ValueError:
+            raise ValueError('Bad value for debugcount')
+        if debugcount not in self.debug_infos:
+            raise ValueError(
+                'Debug %s no longer found (maybe it has expired?)'
+                % debugcount)
+        debug_info = self.debug_infos[debugcount]
+        return func(self, debug_info=debug_info, **form)
     return debug_info_replacement
 
 
@@ -230,7 +225,7 @@ class EvalException(object):
         method = getattr(self, next_part, None)
         if not method:
             start_response('404 Not Found', [('content-type', 'text/plain')])
-            return NOT_FOUND_MSG % (next_part, wsgilib.construct_url(environ))
+            return NOT_FOUND_MSG % (next_part, request.construct_url(environ))
         if not getattr(method, 'exposed', False):
             start_response('403 Forbidden', [('content-type', 'text/plain')])
             return FORBIDDEN_MSG % next_part
@@ -379,7 +374,7 @@ class EvalException(object):
             self.debug_infos[count] = debug_info
 
             if self.xmlhttp_key:
-                get_vars = wsgilib.parse_querystring(environ)
+                get_vars = request.parse_querystring(environ)
                 if dict(get_vars).get(self.xmlhttp_key):
                     exc_data = collector.collect_exception(*exc_info)
                     html = formatter.format_html(
@@ -393,7 +388,7 @@ class EvalException(object):
     def exception_handler(self, exc_info, environ):
         simple_html_error = False
         if self.xmlhttp_key:
-            get_vars = wsgilib.parse_querystring(environ)
+            get_vars = request.parse_querystring(environ)
             if dict(get_vars).get(self.xmlhttp_key):
                 simple_html_error = True
         return errormiddleware.handle_exception(
@@ -672,7 +667,7 @@ def make_repost_button(environ):
     # @@: Use or lose the following code block
     """
     fields = []
-    for name, value in wsgilib.parse_formvars(
+    for name, value in request.parse_formvars(
         environ, include_get_vars=False).items():
         if hasattr(value, 'filename'):
             # @@: Arg, we'll just submit the body, and leave out
