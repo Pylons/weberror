@@ -169,10 +169,13 @@ def get_debug_count(environ):
         return next
 
 
-class EvalException(object):
+class InvalidTemplate(Exception):
+    pass
 
+
+class EvalException(object):
     def __init__(self, application, global_conf=None, error_template=None,
-                 xmlhttp_key=None, media_paths=None):
+                 xmlhttp_key=None, media_paths=None, **params):
         self.application = application
         self.error_template = error_template
         self.debug_infos = {}
@@ -183,7 +186,18 @@ class EvalException(object):
                 xmlhttp_key = global_conf.get('xmlhttp_key', '_')
         self.xmlhttp_key = xmlhttp_key
         self.media_paths = media_paths or {}
-
+        
+        for s in ['head', 'traceback_data', 'extra_data', 'template_data']:
+            if "%("+s+")s" not in self.error_template:
+                raise InvalidTemplate("Could not find %s in template"%("%("+s+")s"))
+        try:
+            error_template % {'head': '', 'traceback_data': '', 
+                              'extra_data':'', 'template_data':'', 
+                              'set_tab':'', 'prefix':''}
+        except:
+            raise Exception('Invalid template. Please ensure all % signs are properly '
+                            'quoted as %% and no extra substitution strings are present.')
+    
     def __call__(self, environ, start_response):
         assert not environ['wsgi.multiprocess'], (
             "The EvalException middleware is not usable in a "
