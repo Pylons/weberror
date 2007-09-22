@@ -38,24 +38,11 @@ from paste import request
 
 import evalcontext
 from weberror.exceptions import errormiddleware, formatter, collector
-from weberror.evalexception.templates import error_template_layout, \
-    error_traceback_template, error_template, error_head_template
+from tempita import HTMLTemplate
+from webob import Request, Response
+from webob import exc
 
 limit = 200
-
-FORBIDDEN_MSG = """\
-403 Forbidden
-Access was denied to this resource.
-%r not allowed
-
-"""
-
-NOT_FOUND_MSG = """\
-404 Not Found
-The resource could not be found.
-%r not fond when parsing %r
-
-"""
 
 def html_quote(v):
     """
@@ -149,28 +136,34 @@ def get_debug_info(func):
     the ``debugcount`` variable to a ``DebugInfo`` object (or gives an
     error if it can't be found).
     """
-    def debug_info_replacement(self, **form):
-        if 'debugcount' not in form:
-            raise ValueError('You must provide a debugcount parameter')
-        debugcount = form.pop('debugcount')
+    def debug_info_replacement(self, req):
+        if 'debugcount' not in req.params:
+            return exc.HTTPBadRequest(
+                "You must provide a debugcount parameter")
+        debugcount = req.params['debugcount']
         try:
             debugcount = int(debugcount)
-        except ValueError:
-            raise ValueError('Bad value for debugcount')
+        except ValueError, e:
+            return exc.HTTPBadRequest(
+                "Invalid value for debugcount (%r): %s"
+                % (debugcount, e))
         if debugcount not in self.debug_infos:
-            raise ValueError(
-                'Debug %s no longer found (maybe it has expired?)'
+            return exc.HTTPServerError(
+                "Debug %s not found (maybe it has expired, or the server was restarted)"
                 % debugcount)
-        debug_info = self.debug_infos[debugcount]
-        return func(self, debug_info=debug_info, **form)
-    return debug_info_replacement
-
+        req.debug_info = self.debug_infos[debugcount]
+        return func(self, req)
 
 debug_counter = itertools.count(int(time.time()))
-def get_debug_count(environ):
+
+def get_debug_count(req):
     """
     Return the unique debug count for the current request
     """
+    if hasattr(req, 'environ'):
+        environ = req.environ
+    else:
+        environ = req
     if 'weberror.evalexception.debug_count' in environ:
         return environ['weberror.evalexception.debug_count']
     else:
@@ -185,11 +178,11 @@ class InvalidTemplate(Exception):
 class EvalException(object):
     """Handles capturing an exception and turning it into an interactive
     exception explorer"""
-    def __init__(self, application, global_conf=None, error_template=error_template_layout,
+    def __init__(self, application, global_conf=None,
+                 error_template_filename=os.path.join(os.path.dirname(__file__), 'error_template.html.tmpl'),
                  xmlhttp_key=None, media_paths=None, 
                  templating_formatters=None, **params):
         self.application = application
-        self.error_template = error_template
         self.debug_infos = {}
         self.templating_formatters = templating_formatters or []
         if xmlhttp_key is None:
@@ -199,138 +192,132 @@ class EvalException(object):
                 xmlhttp_key = global_conf.get('xmlhttp_key', '_')
         self.xmlhttp_key = xmlhttp_key
         self.media_paths = media_paths or {}
-        
-        for s in ['head', 'traceback_data', 'extra_data', 'template_data']:
-            if "%("+s+")s" not in self.error_template:
-                raise InvalidTemplate("Could not find %s in template"%("%("+s+")s"))
-        try:
-            error_template % {'head': '', 'traceback_data': '', 
-                              'extra_data':'', 'template_data':'', 
-                              'set_tab':'', 'prefix':''}
-        except:
-            raise Exception('Invalid template. Please ensure all % signs are properly '
-                            'quoted as %% and no extra substitution strings are present.')
+        self.error_template = HTMLTemplate.from_filename(error_template_filename)
     
     def __call__(self, environ, start_response):
+        ## FIXME: print better error message (maybe fall back on
+        ## normal middleware, plus an error message)
         assert not environ['wsgi.multiprocess'], (
             "The EvalException middleware is not usable in a "
             "multi-process environment")
         environ['weberror.evalexception'] = self
-        if environ.get('PATH_INFO', '').startswith('/_debug/'):
-            return self.debug(environ, start_response)
+        req = Request(environ)
+        if req.path_info_peek() == '_debug':
+            return self.debug(req)(environ, start_response)
         else:
             return self.respond(environ, start_response)
 
-    def debug(self, environ, start_response):
-        assert request.path_info_pop(environ) == '_debug'
-        next_part = request.path_info_pop(environ)
+    def debug(self, req):
+        assert req.path_info_pop() == '_debug'
+        next_part = req.path_info_pop()
         method = getattr(self, next_part, None)
         if not method:
-            start_response('404 Not Found', [('content-type', 'text/plain')])
-            return NOT_FOUND_MSG % (next_part, request.construct_url(environ))
+            return exc.HTTPNotFound('Nothing could be found to match %r' % next_part)
         if not getattr(method, 'exposed', False):
-            start_response('403 Forbidden', [('content-type', 'text/plain')])
-            return FORBIDDEN_MSG % next_part
-            
-        return method(environ, start_response)
+            return exc.HTTPForbidden('Access to %r is forbidden' % next_part)
+        return method(req)
 
-    def media(self, environ, start_response):
+    def media(self, req):
         """Static path where images and other files live"""
-        first_part = request.path_info_split(environ['PATH_INFO'])[0]
+        first_part = req.path_info_peek()
         if first_part in self.media_paths:
-            request.path_info_pop(environ)
-            app = urlparser.StaticURLParser(self.media_paths[first_part])
-            return app(environ, start_response)
+            req.path_info_pop()
+            path = self.media_paths[first_part]
         else:
-            app = urlparser.StaticURLParser(
-                os.path.join(os.path.dirname(__file__), 'media'))
-            return app(environ, start_response)
+            path = os.path.join(os.path.dirname(__file__), 'media')
+        app = urlparser.StaticURLParser(path)
+        return app
     media.exposed = True
 
-    def mochikit(self, environ, start_response):
+    def mochikit(self, req):
         """
         Static path where MochiKit lives
         """
         app = urlparser.StaticURLParser(
             os.path.join(os.path.dirname(__file__), 'mochikit'))
-        return app(environ, start_response)
+        return app
     mochikit.exposed = True
 
-    def summary(self, environ, start_response):
+    def summary(self, req):
         """
         Returns a JSON-format summary of all the cached
         exception reports
         """
-        start_response('200 OK', [('Content-type', 'text/x-json')])
+        res = Response(content_type='text/x-json')
         data = [];
         items = self.debug_infos.values()
         items.sort(lambda a, b: cmp(a.created, b.created))
         data = [item.json() for item in items]
-        return [repr(data)]
+        res.body = repr(data)
+        return res
     summary.exposed = True
 
-    def view(self, environ, start_response):
+    def view(self, req):
         """
         View old exception reports
         """
-        id = int(request.path_info_pop(environ))
+        id = int(req.path_info_pop())
         if id not in self.debug_infos:
-            start_response(
-                '500 Server Error',
-                [('Content-type', 'text/html')])
-            return [
+            return exc.HTTPServerError(
                 "Traceback by id %s does not exist (maybe "
-                "the server has been restarted?)"
-                % id]
+                "the server has been restarted?)" % id)
         debug_info = self.debug_infos[id]
-        return debug_info.wsgi_application(environ, start_response)
+        return debug_info.wsgi_application
     view.exposed = True
 
     def make_view_url(self, environ, base_path, count):
-        return base_path + '/_debug/view/%s' % count
+        return base_path + '/view/%s' % count
 
-    #@wsgiapp()
     #@get_debug_info
-    def show_frame(self, tbid, debug_info, **kw):
-        frame = debug_info.frame(int(tbid))
+    def show_frame(self, req):
+        frame = req.debug_info.frame(int(tbid))
         vars = frame.tb_frame.f_locals
         if vars:
             registry.restorer.restoration_begin(debug_info.counter)
-            local_vars = make_table(vars)
-            registry.restorer.restoration_end()
+            try:
+                local_vars = make_table(vars)
+            finally:
+                registry.restorer.restoration_end()
         else:
             local_vars = 'No local vars'
-        return input_form(tbid, debug_info) + local_vars
+        res = Response(content_type='text/html')
+        res.body = input_form.substitute(tbid=tdid, debug_info=debug_info) + local_vars
+        return res
 
-    show_frame = wsgiapp()(get_debug_info(show_frame))
+    show_frame = get_debug_info(show_frame)
 
-    #@wsgiapp()
     #@get_debug_info
-    def exec_input(self, tbid, debug_info, input, **kw):
+    def exec_input(self, req):
+        input = req.params.get('input')
         if not input.strip():
             return ''
         input = input.rstrip() + '\n'
-        frame = debug_info.frame(int(tbid))
+        frame = req.debug_info.frame(int(req.params['tbid']))
         vars = frame.tb_frame.f_locals
         glob_vars = frame.tb_frame.f_globals
         context = evalcontext.EvalContext(vars, glob_vars)
-        registry.restorer.restoration_begin(debug_info.counter)
-        output = context.exec_expr(input)
-        registry.restorer.restoration_end()
+        registry.restorer.restoration_begin(req.debug_info.counter)
+        try:
+            output = context.exec_expr(input)
+        finally:
+            registry.restorer.restoration_end()
         input_html = formatter.str2html(input)
-        return ('<code style="color: #060">&gt;&gt;&gt;</code> '
-                '<code>%s</code><br>\n%s'
-                % (preserve_whitespace(input_html, quote=False),
-                   preserve_whitespace(output)))
+        res = Response(content_type='text/html')
+        res.body = (
+            '<code style="color: #060">&gt;&gt;&gt;</code> '
+            '<code>%s</code><br>\n%s'
+            % (preserve_whitespace(input_html, quote=False),
+               preserve_whitespace(output)))
+        return res
 
-    exec_input = wsgiapp()(get_debug_info(exec_input))
+    exec_input = get_debug_info(exec_input)
 
     def respond(self, environ, start_response):
-        if environ.get('paste.throw_errors'):
+        req = Request(environ)
+        if req.environ.get('paste.throw_errors'):
             return self.application(environ, start_response)
-        base_path = request.construct_url(environ, with_path_info=False,
-                                          with_query_string=False)
-        environ['paste.throw_errors'] = True
+        base_path = req.application_url + '/_debug'
+        req.environ['paste.throw_errors'] = True
         started = []
         def detect_start_response(status, headers, exc_info=None):
             try:
@@ -350,12 +337,11 @@ class EvalException(object):
                     app_iter.close()
         except:
             exc_info = sys.exc_info()
-            for expected in environ.get('paste.expected_exceptions', []):
-                if isinstance(exc_info[1], expected):
-                    raise
 
             # Tell the Registry to save its StackedObjectProxies current state
             # for later restoration
+            ## FIXME: needs to be more abstract (something in the environ)
+            ## to remove the Paste dependency
             registry.restorer.save_registry_state(environ)
 
             count = get_debug_count(environ)
@@ -376,8 +362,7 @@ class EvalException(object):
             self.debug_infos[count] = debug_info
 
             if self.xmlhttp_key:
-                get_vars = request.parse_querystring(environ)
-                if dict(get_vars).get(self.xmlhttp_key):
+                if self.xmlhttp_key in req.params:
                     exc_data = collector.collect_exception(*exc_info)
                     html = formatter.format_html(
                         exc_data, include_hidden_frames=False,
@@ -386,18 +371,6 @@ class EvalException(object):
 
             # @@: it would be nice to deal with bad content types here
             return debug_info.content()
-
-    def exception_handler(self, exc_info, environ):
-        simple_html_error = False
-        if self.xmlhttp_key:
-            get_vars = request.parse_querystring(environ)
-            if dict(get_vars).get(self.xmlhttp_key):
-                simple_html_error = True
-        return errormiddleware.handle_exception(
-            exc_info, environ['wsgi.errors'],
-            html=True,
-            debug_mode=True,
-            simple_html_error=simple_html_error)
 
 
 class DebugInfo(object):
@@ -448,55 +421,32 @@ class DebugInfo(object):
         return self.content()
 
     def content(self):
-        html, extra_data = format_eval_html(self.exc_data, self.base_path, self.counter)
+        traceback_body, extra_data = format_eval_html(self.exc_data, self.base_path, self.counter)
         head_html = (formatter.error_css + formatter.hide_display_js)
-        head_html += self.eval_javascript()
         repost_button = make_repost_button(self.environ)
         template_data = '<p>No Template information available.</p>'
         tab = 'traceback_data'
         
-        for formatter_ in self.templating_formatters:
-            result = formatter_(self.exc_value)
+        for tmpl_formatter in self.templating_formatters:
+            result = tmpl_formatter(self.exc_value)
             if result:
                 tab = 'template_data'
                 template_data = result
                 break
 
-        head_html = (error_head_template % {'prefix':self.base_path}) + head_html
-
-        traceback_data = error_traceback_template % {
-            'prefix':self.base_path,
-            'body':html,
-            'repost_button': repost_button or '',
-        }
-
-        extra_data = """<h1 class="first"><a name="content"></a>Extra Data</h1>""" + \
-            '\n'.join(extra_data)
-        page = self.error_template % {
-            'head': head_html,
-            'traceback_data': traceback_data,
-            'extra_data':extra_data,
-            'template_data':template_data.replace('<h2>',
-                                              '<h1 class="first">').replace('</h2>',
-                                                                            '</h1>'),
-            'set_tab':tab,
-            'prefix':self.base_path,
-            }
+        template_data = template_data.replace('<h2>', '<h1 class="first">')
+        template_data = template_data.replace('</h2>', '</h1>')
+        page = self.error_template.substitute(
+            head_html=head_html,
+            repost_button=repost_button or '',
+            traceback_body=traceback_body,
+            extra_data=extra_data,
+            template_data=template_data,
+            set_tab=tab,
+            prefix=self.base_path,
+            counter=self.counter,
+            )
         return [page]
-
-    def eval_javascript(self):
-        base_path = self.base_path + '/_debug'
-        return (
-            '<script type="text/javascript" src="%s/mochikit/MochiKit.js">'
-            '</script>\n'
-            '<script type="text/javascript" src="%s/media/debug.js">'
-            '</script>\n'
-            '<script type="text/javascript">\n'
-            'debug_base = %r;\n'
-            'debug_count = %r;\n'
-            '</script>\n'
-            % (base_path, base_path, base_path, self.counter))
-
 
 class EvalHTMLFormatter(formatter.HTMLFormatter):
 
@@ -686,25 +636,24 @@ def make_repost_button(environ):
 """
 
 
-def input_form(tbid, debug_info):
-    return '''
+input_form = HTMLTemplate('''
 <form action="#" method="POST"
- onsubmit="return submitInput($(\'submit_%(tbid)s\'), %(tbid)s)">
-<div id="exec-output-%(tbid)s" style="width: 95%%;
+ onsubmit="return submitInput($(\'submit_{{tbid}}\'), {{tbid}})">
+<div id="exec-output-{{tbid}}" style="width: 95%%;
  padding: 5px; margin: 5px; border: 2px solid #000;
  display: none"></div>
-<input type="text" name="input" id="debug_input_%(tbid)s"
+<input type="text" name="input" id="debug_input_{{tbid}}"
  style="width: 100%%"
  autocomplete="off" onkeypress="upArrow(this, event)"><br>
 <input type="submit" value="Execute" name="submitbutton"
- onclick="return submitInput(this, %(tbid)s)"
- id="submit_%(tbid)s"
- input-from="debug_input_%(tbid)s"
- output-to="exec-output-%(tbid)s">
+ onclick="return submitInput(this, {{tbid}})"
+ id="submit_{{tbid}}"
+ input-from="debug_input_{{tbid}}"
+ output-to="exec-output-{{tbid}}">
 <input type="submit" value="Expand"
  onclick="return expandInput(this)">
 </form>
- ''' % {'tbid': tbid}
+ ''', name='input_form')
 
 
 def make_eval_exception(app, global_conf, xmlhttp_key=None):
