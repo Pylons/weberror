@@ -556,7 +556,7 @@ def format_eval_html(exc_data, base_path, counter):
         counter=counter,
         include_reusable=False)
     short_er, extra_data = short_formatter.format_collected_data(exc_data)
-    short_text_er = formatter.format_text(exc_data, show_extra_data=False)
+    short_text_er, text_extra_data = formatter.format_text(exc_data, show_extra_data=False)
     long_formatter = EvalHTMLFormatter(
         base_path=base_path,
         counter=counter,
