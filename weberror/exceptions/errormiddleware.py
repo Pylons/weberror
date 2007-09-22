@@ -139,9 +139,6 @@ class ErrorMiddleware(object):
         except:
             exc_info = sys.exc_info()
             try:
-                for expect in environ.get('paste.expected_exceptions', []):
-                    if isinstance(exc_info[1], expect):
-                        raise
                 start_response('500 Internal Server Error',
                                [('content-type', 'text/html')],
                                exc_info)

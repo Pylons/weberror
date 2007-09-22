@@ -1,10 +1,10 @@
-from paste.fixture import *
+from webtest import TestApp
 from weberror.exceptions.errormiddleware import ErrorMiddleware
-from paste import lint
+from wsgiref.validate import validator
 from paste.util.quoting import strip_html
 
 def do_request(app, expect_status=500):
-    app = lint.middleware(app)
+    app = validator(app)
     app = ErrorMiddleware(app, {}, debug=True)
     app = clear_middleware(app)
     testapp = TestApp(app)
@@ -69,7 +69,7 @@ def test_makes_exception():
     #print res
     assert 'bad_app() takes no arguments (2 given' in res
     assert 'iterator = application(environ, start_response_wrapper)' in res
-    assert 'paste.lint' in res
+    assert 'wsgiref.validate' in res
     assert 'weberror.exceptions.errormiddleware' in res
 
 def test_start_res():
@@ -91,7 +91,7 @@ def test_after_start():
     assert ':49' in res
 
 def test_iter_app():
-    res = do_request(lint.middleware(iter_app), 200)
+    res = do_request(validator(iter_app), 200)
     #print res
     assert 'None raises error' in res
     assert 'yielder' in res
