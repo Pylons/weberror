@@ -24,12 +24,13 @@ setup(name='WebError',
       author='Ben Bangert, Ian Bicking, Mark Ramm',
       author_email='',
       url='',
-      license='',
+      license='MIT',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          # -*- Extra requirements: -*-
+        'WebOb',
+        'wsgiref',
       ],
       entry_points="""
       [paste.filter_app_factory]
