@@ -153,6 +153,8 @@ def get_debug_info(func):
                 % debugcount)
         req.debug_info = self.debug_infos[debugcount]
         return func(self, req)
+    debug_info_replacement.exposed = True
+    return debug_info_replacement
 
 debug_counter = itertools.count(int(time.time()))
 
@@ -211,7 +213,7 @@ class EvalException(object):
         assert req.path_info_pop() == '_debug'
         next_part = req.path_info_pop()
         method = getattr(self, next_part, None)
-        if not method:
+        if method is None:
             return exc.HTTPNotFound('Nothing could be found to match %r' % next_part)
         if not getattr(method, 'exposed', False):
             return exc.HTTPForbidden('Access to %r is forbidden' % next_part)
@@ -270,10 +272,11 @@ class EvalException(object):
 
     #@get_debug_info
     def show_frame(self, req):
-        frame = req.debug_info.frame(int(tbid))
+        tbid = int(req.params['tbid'])
+        frame = req.debug_info.frame(tbid)
         vars = frame.tb_frame.f_locals
         if vars:
-            registry.restorer.restoration_begin(debug_info.counter)
+            registry.restorer.restoration_begin(req.debug_info.counter)
             try:
                 local_vars = make_table(vars)
             finally:
@@ -281,7 +284,7 @@ class EvalException(object):
         else:
             local_vars = 'No local vars'
         res = Response(content_type='text/html')
-        res.body = input_form.substitute(tbid=tdid, debug_info=debug_info) + local_vars
+        res.body = input_form.substitute(tbid=tbid, debug_info=req.debug_info) + local_vars
         return res
 
     show_frame = get_debug_info(show_frame)
@@ -461,7 +464,7 @@ class EvalHTMLFormatter(formatter.HTMLFormatter):
         return (line +
                 '  <a href="#" class="switch_source" '
                 'tbid="%s" onClick="return showFrame(this)">&nbsp; &nbsp; '
-                '<img src="%s/_debug/media/plus.jpg" border=0 width=9 '
+                '<img src="%s/media/plus.jpg" border=0 width=9 '
                 'height=9> &nbsp; &nbsp;</a>'
                 % (frame.tbid, self.base_path))
 
@@ -470,35 +473,50 @@ def make_table(items):
     if isinstance(items, dict):
         items = items.items()
         items.sort()
-    rows = []
-    i = 0
-    for name, value in items:
-        i += 1
-        out = StringIO()
-        try:
-            pprint.pprint(value, out)
-        except Exception, e:
-            print >> out, 'Error: %s' % e
-        value = html_quote(out.getvalue())
-        if len(value) > 100:
-            # @@: This can actually break the HTML :(
-            # should I truncate before quoting?
-            orig_value = value
-            value = value[:100]
-            value += '<a class="switch_source" style="background-color: #999" href="#" onclick="return expandLong(this)">...</a>'
-            value += '<span style="display: none">%s</span>' % orig_value[100:]
-        value = formatter.make_wrappable(value)
-        if i % 2:
-            attr = ' class="even"'
-        else:
-            attr = ' class="odd"'
-        rows.append('<tr%s style="vertical-align: top;"><td>'
-                    '<b>%s</b></td><td style="overflow: auto">%s<td></tr>'
-                    % (attr, html_quote(name),
-                       preserve_whitespace(value, quote=False)))
-    return '<table>%s</table>' % (
-        '\n'.join(rows))
+    return table_template.substitute(
+        html_quote=html_quote,
+        items=items,
+        preserve_whitespace=preserve_whitespace,
+        make_wrappable=formatter.make_wrappable,
+        pprint_format=pprint_format)
 
+table_template = HTMLTemplate('''
+{{py:i = 0}}
+<table>
+{{for name, value in items:}}
+  {{py:i += 1}}
+{{py:
+value_html = html_quote(pprint_format(value, safe=True))
+value_html = make_wrappable(value_html)
+if len(value_html) > 100:
+    ## FIXME: This can break HTML; truncate before quoting?
+    value_html, expand_html = value_html[:100], value_html[100:]
+else:
+    expand_html = ''
+}}
+  <tr class="{{if i%2}}even{{else}}odd{{endif}}"
+      style="vertical-align: top">
+    <td><b>{{name}}</b></td>
+    <td style="overflow: auto">{{preserve_whitespace(value_html, quote=False)|html}}{{if expand_html}}
+      <a class="switch_source" style="background-color: #999" href="#" onclick="return expandLong(this)">...</a>
+      <span style="display: none">{{expand_html|html}}</span>
+    {{endif}}
+    </td>
+  </tr>
+{{endfor}}
+</table>
+''', name='table_template')
+
+def pprint_format(value, safe=False):
+    out = StringIO()
+    try:
+        pprint.pprint(value, out)
+    except Exception, e:
+        if safe:
+            out.write('Error: %s' % e)
+        else:
+            raise
+    return out.getvalue()
 
 def format_eval_html(exc_data, base_path, counter):
     short_formatter = EvalHTMLFormatter(
