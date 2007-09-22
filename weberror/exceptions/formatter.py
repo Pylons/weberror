@@ -9,7 +9,7 @@ Formatters for the exception data that comes from ExceptionCollector.
 
 import cgi
 import re
-from paste.util import PySourceColor
+from weberror.util import PySourceColor
 
 def html_quote(s):
     return cgi.escape(str(s), True)
