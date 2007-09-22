@@ -31,6 +31,7 @@ setup(name='WebError',
       install_requires=[
         'WebOb',
         'wsgiref',
+        'Tempita',
       ],
       entry_points="""
       [paste.filter_app_factory]
