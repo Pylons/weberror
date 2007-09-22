@@ -2,14 +2,14 @@ function showFrame(anchor) {
     var tbid = anchor.getAttribute('tbid');
     var expanded = anchor.expanded;
     if (expanded) {
-        MochiKit.DOM.hideElement(anchor.expandedElement);
+        hideElement(anchor.expandedElement);
         anchor.expanded = false;
         _swapImage(anchor);
         return false;
     }
     anchor.expanded = true;
     if (anchor.expandedElement) {
-        MochiKit.DOM.showElement(anchor.expandedElement);
+        showElement(anchor.expandedElement);
         _swapImage(anchor);
         $('debug_input_'+tbid).focus();
         return false;
@@ -17,17 +17,14 @@ function showFrame(anchor) {
     var url = debug_base
         + '/show_frame?tbid=' + tbid
         + '&debugcount=' + debug_count;
-    var d = MochiKit.Async.doSimpleXMLHttpRequest(url);
-    d.addCallbacks(function (data) {
-        var el = MochiKit.DOM.DIV({});
-        anchor.parentNode.insertBefore(el, anchor.nextSibling);
-        el.innerHTML = data.responseText;
-        anchor.expandedElement = el;
-        _swapImage(anchor);
-        $('debug_input_'+tbid).focus();
-    }, function (error) {
-        showError(error.req.responseText);
-    });
+    callbackXHR(url, null, function (data) {
+                    var el = createElement('div');
+                    anchor.parentNode.insertBefore(el, anchor.nextSibling);
+                    el.innerHTML = data.responseText;
+                    anchor.expandedElement = el;
+                    _swapImage(anchor);
+                    $('debug_input_'+tbid).focus();
+                });
     return false;
 }
 
@@ -57,15 +54,12 @@ function submitInput(button, tbid) {
         debugcount: debug_count,
         input: input.value
     };
-    MochiKit.DOM.showElement(output);
-    var d = MochiKit.Async.doSimpleXMLHttpRequest(url, vars);
-    d.addCallbacks(function (data) {
+    showElement(output);
+    callbackXHR(url, vars, function (data) {
         var result = data.responseText;
         output.innerHTML += result;
         input.value = '';
         input.focus();
-    }, function (error) {
-        showError(error.req.responseText);
     });
     return false;
 }
@@ -77,13 +71,13 @@ function showError(msg) {
     } else {
         el.innerHTML = msg;
     }
-    MochiKit.DOM.showElement('error-area');
+    showElement($('error-area'));
 }
 
 function clearError() {
     var el = $('error-container');
     el.innerHTML = '';
-    MochiKit.DOM.hideElement('error-area');
+    hideElement($('error-area'));
 }
 
 function expandInput(button) {
@@ -94,17 +88,17 @@ function expandInput(button) {
         autocomplete: 'off'
     };
     if (input.tagName == 'INPUT') {
-        var newEl = MochiKit.DOM.TEXTAREA(stdops);
+        var newEl = createElement('textarea', stdops);
         var text = 'Contract';
     } else {
         stdops['type'] = 'text';
         stdops['onkeypress'] = 'upArrow(this)';
-        var newEl = MochiKit.DOM.INPUT(stdops);
+        var newEl = createElement('input', stdops);
         var text = 'Expand';
     }
     newEl.value = input.value;
     newEl.id = input.id;
-    MochiKit.DOM.swapDOM(input, newEl);
+    swapDOM(input, newEl);
     newEl.focus();
     button.value = text;
     return false;
@@ -155,7 +149,92 @@ function expandLong(anchor) {
     if (! span) {
         return false;
     }
-    MochiKit.DOM.showElement(span);
-    MochiKit.DOM.hideElement(anchor);
+    showElement(span);
+    hideElement(anchor);
     return false;
+}
+
+function showElement(el) {
+    el.style.display = '';
+}
+
+function hideElement(el) {
+    el.style.display = 'none';
+}
+
+function createElement(tag, attrs /*, sub-elements...*/) {
+    var el = document.createElement(tag);
+    if (attrs) {
+        for (var i in attrs) {
+            el.setAttribute(i, attrs[i]);
+        }
+    }
+    for (var i=2; i<arguments.length; i++) {
+        var item = arguments[i];
+        if (typeof item == 'string') {
+            item = document.createTextNode(item);
+        }
+        el.appendChild(item);
+    }
+    return el;
+}
+
+function swapDOM(dest, src) {
+    var parent = dest.parentNode;
+    parent.replaceChild(src, dest);
+    return src;
+}
+
+
+function getXMLHttpRequest() {
+    /* Taken from MochiKit */
+    var tryThese = [
+        function () { return new XMLHttpRequest(); },
+        function () { return new ActiveXObject('Msxml2.XMLHTTP'); },
+        function () { return new ActiveXObject('Microsoft.XMLHTTP'); },
+        function () { return new ActiveXObject('Msxml2.XMLHTTP.4.0'); }
+        ];
+    for (var i = 0; i < tryThese.length; i++) {
+        var func = tryThese[i];
+        try {
+            return func();
+        } catch (e) {
+            // pass
+        }
+    }
+}
+
+function callbackXHR(url, data, callback) {
+    var xhr = getXMLHttpRequest();
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+            if (xhr.status == 200) {
+                callback(xhr);
+            } else {
+                showError(xhr.responseText);
+            }
+        }
+    };
+    var method = data ? "POST" : "GET";
+    xhr.open(method, url);
+    if (data) {
+        if (! (typeof data == 'string')) {
+            var newData = '';
+            for (var i in data) {
+                if (newData) {
+                    newData += '&';
+                }
+                newData += i + '=' + escape(data[i]);
+            }
+            data = newData;
+        }
+        xhr.setRequestHeader('content-type', 'application/x-www-form-urlencoded');
+        xhr.send(data);
+    } else {
+        xhr.send(null);
+    }
+}
+
+function $(elementId) {
+    return document.getElementById(elementId);
 }

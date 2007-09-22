@@ -657,11 +657,11 @@ def make_repost_button(environ):
 input_form = HTMLTemplate('''
 <form action="#" method="POST"
  onsubmit="return submitInput($(\'submit_{{tbid}}\'), {{tbid}})">
-<div id="exec-output-{{tbid}}" style="width: 95%%;
+<div id="exec-output-{{tbid}}" style="width: 95%;
  padding: 5px; margin: 5px; border: 2px solid #000;
  display: none"></div>
 <input type="text" name="input" id="debug_input_{{tbid}}"
- style="width: 100%%"
+ style="width: 100%"
  autocomplete="off" onkeypress="upArrow(this, event)"><br>
 <input type="submit" value="Execute" name="submitbutton"
  onclick="return submitInput(this, {{tbid}})"
