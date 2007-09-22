@@ -38,6 +38,8 @@ from paste import request
 
 import evalcontext
 from weberror.exceptions import errormiddleware, formatter, collector
+from weberror.evalexception.templates import error_template_layout, \
+    error_traceback_template, error_template, error_head_template
 
 limit = 200
 
@@ -183,7 +185,7 @@ class InvalidTemplate(Exception):
 class EvalException(object):
     """Handles capturing an exception and turning it into an interactive
     exception explorer"""
-    def __init__(self, application, global_conf=None, error_template=None,
+    def __init__(self, application, global_conf=None, error_template=error_template_layout,
                  xmlhttp_key=None, media_paths=None, 
                  templating_formatters=None, **params):
         self.application = application
@@ -703,85 +705,6 @@ def input_form(tbid, debug_info):
  onclick="return expandInput(this)">
 </form>
  ''' % {'tbid': tbid}
-
-
-error_template = '''
-<html>
-<head>
- <title>Server Error</title>
- %(head_html)s
-</head>
-<body>
-
-<div id="error-area" style="display: none; background-color: #600; color: #fff; border: 2px solid black">
-<div id="error-container"></div>
-<button onclick="return clearError()">clear this</button>
-</div>
-
-%(repost_button)s
-
-%(body)s
-
-</body>
-</html>
-'''
-
-error_head_template = """
-<style type="text/css">
-        .red {
-            color:#FF0000;
-        }
-        .bold {
-            font-weight: bold;
-        }
-</style>
-<script type="text/javascript">
-
-if (document.images)
-{
-  pic1= new Image(100,25); 
-  pic1.src="%(prefix)s/_debug/media/pylons/img/tab-yellow.png"; 
-}
-
-function switch_display(id) {
-    ids = ['extra_data', 'template_data', 'traceback_data']
-    for (i in ids){
-        part = ids[i] 
-        var el = document.getElementById(part);
-        el.className = "hidden-data";
-        var el = document.getElementById(part+'_tab');
-        el.className = "not-active";
-        var el = document.getElementById(part+'_link');
-        el.className = "not-active";
-    }
-    var el = document.getElementById(id);
-    el.className = "active";
-    var el = document.getElementById(id+'_link');
-    el.className = "active";
-    var el = document.getElementById(id+'_tab');
-    el.className = "active";
-}   
-</script>
-"""
-
-
-error_traceback_template = """\
-<div style="float: left; width: 100%%; padding-bottom: 20px;">
-<h1 class="first"><a name="content"></a>Error Traceback</h1>
-<div id="error-area" style="display: none; background-color: #600; color: #fff; border: 2px solid black">
-<button onclick="return clearError()">clear this</button>
-<div id="error-container"></div>
-<button onclick="return clearError()">clear this</button>
-</div>
-%(body)s
-<br />
-<div class="highlight" style="padding: 20px;">
-<b>Extra Features</b>
-<table border="0">
-<tr><td>&gt;&gt;</td><td>Display the lines of code near each part of the traceback</td></tr>
-<tr><td><img src="%(prefix)s/_debug/media/plus.jpg" /></td><td>Show a debug prompt to allow you to directly debug the code at the traceback</td></tr>
-</table>
-</div>%(repost_button)s"""
 
 
 def make_eval_exception(app, global_conf, xmlhttp_key=None):
