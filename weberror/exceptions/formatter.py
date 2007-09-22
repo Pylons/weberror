@@ -201,7 +201,7 @@ class TextFormatter(AbstractFormatter):
         lines.append(exc_info)
         for name in 'normal', 'supplemental', 'extra':
             lines.extend([value for n, value in data_by_importance[name]])
-        return self.format_combine_lines(lines)
+        return self.format_combine_lines(lines), ''
 
     def format_combine_lines(self, lines):
         return '\n'.join(lines)
@@ -442,9 +442,10 @@ def format_html(exc_data, include_hidden_frames=False, **ops):
     # was actually trimmed at all
     ops['include_reusable'] = False
     ops['show_extra_data'] = False
-    long_er = format_html(exc_data, show_hidden_frames=True, **ops)
-    text_er = format_text(exc_data, show_hidden_frames=True, **ops)
+    long_er, head_html = format_html(exc_data, show_hidden_frames=True, **ops)
+    text_er, head_text = format_text(exc_data, show_hidden_frames=True, **ops)
     return """
+    %s
     %s
     <br>
     <script type="text/javascript">
@@ -460,7 +461,7 @@ def format_html(exc_data, include_hidden_frames=False, **ops):
     <div id="text_version" class="hidden-data">
     <textarea style="width: 100%%" rows=10 cols=60>%s</textarea>
     </div>
-    """ % (short_er, long_er, cgi.escape(text_er))
+    """ % (head_html, short_er, long_er, cgi.escape(text_er))
         
 def format_text(exc_data, **ops):
     return TextFormatter(**ops).format_collected_data(exc_data)

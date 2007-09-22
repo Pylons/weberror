@@ -56,7 +56,8 @@ def pass_through(info, inner, *args, **kw):
 def format(type='html', **ops):
     data = collector.collect_exception(*sys.exc_info())
     report = getattr(formatter, 'format_' + type)(data, **ops)
-    return report
+    # report[1] is some head data (if any), like CSS or Javascript
+    return report[0]
 
 formats = ('text', 'html')
 
@@ -152,6 +153,8 @@ def test_hide_after():
                 raise_error)
         except:
             result = format(f)
+            assert isinstance(result, basestring), (
+                'Bad result: %r' % (result,))
             print strip_html(result)
             assert 'AABB' in result
             assert 'CCDD' not in result
