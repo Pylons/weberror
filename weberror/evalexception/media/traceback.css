@@ -1,7 +1,57 @@
+body {
+  font-family: Helvetica, sans-serif;
+}
+
+table {
+  width: 100%;
+}
+
+tr.header {
+  background-color: #006;
+  color: #fff;
+}
+
+tr.even {
+  background-color: #ddd;
+}
+
+table.variables td {
+  vertical-align: top;
+  overflow: auto;
+}
+
+a.button {
+  background-color: #ccc;
+  border: 2px outset #aaa;
+  color: #000;
+  text-decoration: none;
+}
+
+a.button:hover {
+  background-color: #ddd;
+}
+
+code.source {
+  color: #006;
+}
+
+a.switch_source {
+  color: #090;
+  text-decoration: none;
+}
+
+a.switch_source:hover {
+  background-color: #ddd;
+}
+
+.source-highlight {
+  background-color: #ff9;
+}
 
 .red { color:#FF0000; }
 .bold { font-weight: bold; }
 
+.hidden-data {display: none}
 
 /* Mako Styles */
 

@@ -291,7 +291,7 @@ class HTMLFormatter(TextFormatter):
             extra_data.extend([value for n, value in data_by_importance['extra']])
         text = self.format_combine_lines(lines)
         if self.include_reusable:
-            return error_css + hide_display_js + text, extra_data
+            return text, extra_data
         else:
             # Usually because another error is already on this page,
             # and so the js & CSS are unneeded
@@ -324,121 +324,7 @@ class HTMLFormatter(TextFormatter):
 class XMLFormatter(HTMLFormatter):
     pass
 
-
-hide_display_js = r'''
-<script type="text/javascript">
-function hide_display(id) {
-    var el = document.getElementById(id);
-    if (el.className == "hidden-data") {
-        el.className = "";
-        return true;
-    } else {
-        el.className = "hidden-data";
-        return false;
-    }
-}
-document.write('<style type="text/css">\n');
-document.write('.hidden-data {display: none}\n');
-document.write('</style>\n');
-function show_button(toggle_id, name) {
-    document.write('<a href="#' + toggle_id
-        + '" onclick="javascript:hide_display(\'' + toggle_id
-        + '\')" class="button">' + name + '</a><br>');
-}
-
-function switch_source(el, hide_type) {
-    while (el) {
-        if (el.getAttribute &&
-            el.getAttribute('source-type') == hide_type) {
-            break;
-        }
-        el = el.parentNode;
-    }
-    if (! el) {
-        return false;
-    }
-    el.style.display = 'none';
-    if (hide_type == 'long') {
-        while (el) {
-            if (el.getAttribute &&
-                el.getAttribute('source-type') == 'short') {
-                break;
-            }
-            el = el.nextSibling;
-        }
-    } else {
-        while (el) {
-            if (el.getAttribute &&
-                el.getAttribute('source-type') == 'long') {
-                break;
-            }
-            el = el.previousSibling;
-        }
-    }
-    if (el) {
-        el.style.display = '';
-    }
-    return false;
-}
-
-</script>'''
     
-
-error_css = """
-<style type="text/css">
-body {
-  font-family: Helvetica, sans-serif;
-}
-
-table {
-  width: 100%;
-}
-
-tr.header {
-  background-color: #006;
-  color: #fff;
-}
-
-tr.even {
-  background-color: #ddd;
-}
-
-table.variables td {
-  vertical-align: top;
-  overflow: auto;
-}
-
-a.button {
-  background-color: #ccc;
-  border: 2px outset #aaa;
-  color: #000;
-  text-decoration: none;
-}
-
-a.button:hover {
-  background-color: #ddd;
-}
-
-code.source {
-  color: #006;
-}
-
-a.switch_source {
-  color: #090;
-  text-decoration: none;
-}
-
-a.switch_source:hover {
-  background-color: #ddd;
-}
-
-.source-highlight {
-  background-color: #ff9;
-}
-
-</style>
-"""
-
 def format_html(exc_data, include_hidden_frames=False, **ops):
     if not include_hidden_frames:
         return HTMLFormatter(**ops).format_collected_data(exc_data)
