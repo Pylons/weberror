@@ -320,6 +320,11 @@ class HTMLFormatter(TextFormatter):
         table.append('</table>')
         return '\n'.join(table)
 
+
+class XMLFormatter(HTMLFormatter):
+    pass
+
+
 hide_display_js = r'''
 <script type="text/javascript">
 function hide_display(id) {
