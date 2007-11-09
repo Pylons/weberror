@@ -321,8 +321,94 @@ class HTMLFormatter(TextFormatter):
         return '\n'.join(table)
 
 
-class XMLFormatter(HTMLFormatter):
-    pass
+class XMLFormatter(AbstractFormatter):
+    def quote(self, s):
+        return s
+    def quote_long(self, s):
+        return s
+    def emphasize(self, s):
+        return s
+    def format_sup_url(self, url):
+        return 'URL: <a href="%s">%s</a>' % (url, url)
+    def format_combine_lines(self, lines):
+        return '<br>\n'.join(lines)
+    def format_source_line(self, filename, frame):
+        name = self.quote(frame.name or '?')
+        return 'Module <span class="module" title="%s">%s</span>:<b>%s</b> in <code>%s</code>' % (
+            filename, frame.modname or '?', frame.lineno or '?',
+            name)
+        return 'File %r, line %s in <tt>%s</tt>' % (
+            filename, frame.lineno, name)
+    def format_long_source(self, source, long_source):
+        q_long_source = str2html(long_source, False, 4, True)
+        q_source = str2html(source, True, 0, False)
+        return ('<code style="display: none" class="source" source-type="long"><a class="switch_source" onclick="return switch_source(this, \'long\')" href="#">&lt;&lt;&nbsp; </a>%s</code>'
+                '<code class="source" source-type="short"><a onclick="return switch_source(this, \'short\')" class="switch_source" href="#">&gt;&gt;&nbsp; </a>%s</code>'
+                % (q_long_source,
+                   q_source))
+    def format_source(self, source_line):
+        return '&nbsp;&nbsp;<code class="source">%s</code>' % self.quote(source_line.strip())
+    def format_exception_info(self, etype, evalue):
+        return self.emphasize(
+            '%s: %s' % (self.quote(etype), self.quote(evalue)))
+    def format_traceback_info(self, info):
+        return '<pre>%s</pre>' % self.quote(info)
+
+    def format_extra_data(self, importance, title, value):
+        if isinstance(value, str):
+            s = self.pretty_string_repr(value)
+            if '\n' in s:
+                return '%s:<br><pre>%s</pre>' % (title, self.quote(s))
+            else:
+                return '%s: <tt>%s</tt>' % (title, self.quote(s))
+        elif isinstance(value, dict):
+            return self.zebra_table(title, value)
+        elif (isinstance(value, (list, tuple))
+              and self.long_item_list(value)):
+            return '%s: <tt>[<br>\n&nbsp; &nbsp; %s]</tt>' % (
+                title, ',<br>&nbsp; &nbsp; '.join(map(self.quote, map(repr, value))))
+        else:
+            return '%s: <tt>%s</tt>' % (title, self.quote(repr(value)))
+
+    def format_combine(self, data_by_importance, lines, exc_info):
+        lines[:0] = [value for n, value in data_by_importance['important']]
+        lines.append(exc_info)
+        for name in 'normal', 'supplemental':
+            lines.extend([value for n, value in data_by_importance[name]])
+        
+        extra_data = []
+        if data_by_importance['extra']:
+            extra_data.extend([value for n, value in data_by_importance['extra']])
+        text = self.format_combine_lines(lines)
+        if self.include_reusable:
+            return text, extra_data
+        else:
+            # Usually because another error is already on this page,
+            # and so the js & CSS are unneeded
+            return text, extra_data
+
+    def zebra_table(self, title, rows, table_class="variables"):
+        if isinstance(rows, dict):
+            rows = rows.items()
+            rows.sort()
+        table = ['<table class="%s">' % table_class,
+                 '<tr class="header"><th colspan="2">%s</th></tr>'
+                 % self.quote(title)]
+        odd = False
+        for name, value in rows:
+            try:
+                value = repr(value)
+            except Exception, e:
+                value = 'Cannot print: %s' % e
+            odd = not odd
+            table.append(
+                '<tr class="%s"><td>%s</td>'
+                % (odd and 'odd' or 'even', self.quote(name)))
+            table.append(
+                '<td><tt>%s</tt></td></tr>'
+                % make_wrappable(self.quote(truncate(value))))
+        table.append('</table>')
+        return '\n'.join(table)    
 
     
 def format_html(exc_data, include_hidden_frames=False, **ops):
