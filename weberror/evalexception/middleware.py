@@ -183,10 +183,13 @@ class EvalException(object):
     def __init__(self, application, global_conf=None,
                  error_template_filename=os.path.join(os.path.dirname(__file__), 'error_template.html.tmpl'),
                  xmlhttp_key=None, media_paths=None, 
-                 templating_formatters=None, **params):
+                 templating_formatters=None, head_html='', footer_html='', 
+                 **params):
         self.application = application
         self.debug_infos = {}
         self.templating_formatters = templating_formatters or []
+        self.head_html = HTMLTemplate(head_html)
+        self.footer_html = HTMLTemplate(footer_html)
         if xmlhttp_key is None:
             if global_conf is None:
                 xmlhttp_key = '_'
@@ -360,7 +363,8 @@ class EvalException(object):
             exc_data = collector.collect_exception(*exc_info)
             debug_info = DebugInfo(count, exc_info, exc_data, base_path,
                                    environ, view_uri, self.error_template,
-                                   self.templating_formatters)
+                                   self.templating_formatters, self.head_html,
+                                   self.footer_html)
             assert count not in self.debug_infos
             self.debug_infos[count] = debug_info
 
@@ -379,7 +383,8 @@ class EvalException(object):
 class DebugInfo(object):
 
     def __init__(self, counter, exc_info, exc_data, base_path,
-                 environ, view_uri, error_template, templating_formatters):
+                 environ, view_uri, error_template, templating_formatters, 
+                 head_html, footer_html):
         self.counter = counter
         self.exc_data = exc_data
         self.base_path = base_path
@@ -388,6 +393,8 @@ class DebugInfo(object):
         self.error_template = error_template
         self.created = time.time()
         self.templating_formatters = templating_formatters
+        self.head_html = head_html
+        self.footer_html = footer_html
         self.exc_type, self.exc_value, self.tb = exc_info
         __exception_formatter__ = 1
         self.frames = []
@@ -425,7 +432,6 @@ class DebugInfo(object):
 
     def content(self):
         traceback_body, extra_data = format_eval_html(self.exc_data, self.base_path, self.counter)
-        head_html = ''
         repost_button = make_repost_button(self.environ)
         template_data = '<p>No Template information available.</p>'
         tab = 'traceback_data'
@@ -440,7 +446,8 @@ class DebugInfo(object):
         template_data = template_data.replace('<h2>', '<h1 class="first">')
         template_data = template_data.replace('</h2>', '</h1>')
         page = self.error_template.substitute(
-            head_html=head_html,
+            head_html=self.head_html.substitute(prefix=self.base_path),
+            footer_html=self.footer_html.substitute(prefix=self.base_path),
             repost_button=repost_button or '',
             traceback_body=traceback_body,
             extra_data=extra_data,

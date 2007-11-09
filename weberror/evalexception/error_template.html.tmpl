@@ -2,7 +2,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
  <title>Server Error</title>
- {{head_html|html}}
 
 <script type="text/javascript">
   debug_base = {{repr(prefix)}};
@@ -11,6 +10,7 @@
 
 <!-- CSS Imports -->
 <link rel="stylesheet" href="{{prefix}}/media/traceback.css" type="text/css" media="screen" />
+{{head_html|html}}
 
 </head>
 
@@ -20,7 +20,7 @@
 <noscript>
 <div style="border-bottom: 1px solid #808080">
 <div style="border-bottom: 1px solid #404040">
-<table width="100%" border="0" cellpadding="0" bgcolor="#FFFFE1"><tr><td valign="middle"><img src="{{prefix}}/media/pylons/img/warning.gif" alt="Warning" /></td><td>&nbsp;</td><td><span style="padding: 0px; margin: 0px; font-family: Tahoma, sans-serif; font-size: 11px">Warning, your browser does not support JavaScript so you will not be able to use the interactive debugging on this page.</span></td></tr></table>
+<table width="100%" border="0" cellpadding="0" bgcolor="#FFFFE1"><tr><td>&nbsp;</td><td><span style="padding: 0px; margin: 0px; font-family: Tahoma, sans-serif; font-size: 11px">Warning, your browser does not support JavaScript so you will not be able to use the interactive debugging on this page.</span></td></tr></table>
 </div>
 </div>
 </noscript>
@@ -82,8 +82,9 @@
         </div>
         <br class="clear" />
         <div class="hr"><hr class="clear" /></div>
-        <!-- Footer -->
     </div>
+    <!-- Footer -->
+    <div id="footer">{{footer_html|html}}</div>
     <script type="text/javascript" src="{{prefix}}/media/jquery-1.2.1.min.js"></script>
     <script type="text/javascript" src="{{prefix}}/media/debug.js"></script>
 </body>
