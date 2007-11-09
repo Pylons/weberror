@@ -533,7 +533,9 @@ def format_eval_html(exc_data, base_path, counter):
         include_reusable=False)
     long_er, extra_data_none = long_formatter.format_collected_data(exc_data)
     long_text_er = formatter.format_text(exc_data, show_hidden_frames=True,
-                                         show_extra_data=False)
+                                         show_extra_data=False)[0]
+    xml_er = formatter.format_xml(exc_data, show_hidden_frames=True, 
+                                  show_extra_data=False)[0]
     extra_data_text = format_extra_data_text(exc_data)
     if extra_data_text:
         extra_data.append("""
@@ -590,14 +592,18 @@ def format_eval_html(exc_data, base_path, counter):
     <div id="util-link">
         <script type="text/javascript">
         show_button('short_text_version', 'text version')
+        show_button('xml_version', 'xml version')
         </script>
     </div>
     <div id="short_text_version" class="hidden-data">
     <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
     </div>
+    <div id="xml_version" class="hidden-data">
+    <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
+    </div>
     %s
     """ % (short_er, len(short_text_er.splitlines()), short_text_er,
-           full_traceback_html), extra_data
+           len(xml_er.splitlines()), cgi.escape(xml_er), full_traceback_html), extra_data
 
 def format_extra_data_text(exc_data):
     """ Return a text representation of the 'extra_data' dict when one exists """
@@ -656,7 +662,7 @@ def make_repost_button(environ):
 
 input_form = HTMLTemplate('''
 <form action="#" method="POST"
- onsubmit="return submitInput($(\'submit_{{tbid}}\'), {{tbid}})">
+ onsubmit="return submitInput($(\'#submit_{{tbid}}\').get(0), {{tbid}})">
 <div id="exec-output-{{tbid}}" style="width: 95%;
  padding: 5px; margin: 5px; border: 2px solid #000;
  display: none"></div>

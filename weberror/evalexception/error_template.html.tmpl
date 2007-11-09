@@ -4,6 +4,7 @@
  <title>Server Error</title>
  {{head_html|html}}
 
+<script type="text/javascript" src="{{prefix}}/media/jquery-1.2.1.min.js"></script>
 <script type="text/javascript" src="{{prefix}}/media/debug.js"></script>
 <script type="text/javascript">
   debug_base = {{repr(prefix)}};
@@ -29,10 +30,6 @@
     <!-- Top anchor -->
     <a name="top"></a>
 
-    <!-- Logo -->
-    <h1 id="logo"><a class="no-underline" href="http://pylonshq.com"><img class="no-border" src="{{prefix}}/media/pylons/img/logo.gif" alt="Pylons" title="Pylons"/></a></h1>
-    <p class="invisible"><a href="#content">Skip to content</a></p>
-
     <!-- Main Content -->
     <div id="nav-bar">
 
@@ -41,9 +38,9 @@
 
             <ul id="navlist">
                <!--  {{#links|html}} -->
-                <li id='traceback_data_tab' class="active"><a href="javascript:switch_display('traceback_data')" id='traceback_data_link' class="active"  accesskey="1">Traceback</a></li>
-                <li id='extra_data_tab' class="" ><a href="javascript:switch_display('extra_data')" id='extra_data_link' accesskey="2" >Extra Data</a></li>
-                <li id='template_data_tab'><a href="javascript:switch_display('template_data')" accesskey="3" id='template_data_link'>Template</a></li>
+               <li id='extra_data_tab' class="" ><a href="javascript:switch_display('extra_data')" id='extra_data_link' accesskey="2" >Extra Data</a></li>
+               <li id='template_data_tab'><a href="javascript:switch_display('template_data')" accesskey="3" id='template_data_link'>Template</a></li>
+               <li id='traceback_data_tab' class="active"><a href="javascript:switch_display('traceback_data')" id='traceback_data_link' class="active"  accesskey="1">Traceback</a></li>
             </ul>
     </div>
     <div id="main-content">
@@ -69,7 +66,7 @@
 </div>
 {{traceback_body|html}}
 <br />
-<div class="highlight" style="padding: 20px;">
+<div class="feature-highlight">
 <b>Extra Features</b>
 <table border="0">
 <tr><td>&gt;&gt;</td><td>Display the lines of code near each part of the traceback</td></tr>
@@ -82,10 +79,6 @@
         <br class="clear" />
         <div class="hr"><hr class="clear" /></div>
         <!-- Footer -->
-    </div>
-    <div style=" background: #FFFF99; padding: 10px 10px 10px 6%">
-        The Pylons Team |
-        <a href="#top" accesskey="9" title="Return to the top of the navigation links">Top</a>
     </div>
 </body>
 </html>
