@@ -11,7 +11,7 @@ function showFrame(anchor) {
     if (anchor.expandedElement) {
         showElement(anchor.expandedElement);
         _swapImage(anchor);
-        $('#debug_input_'+tbid).focus();
+        $('#debug_input_'+tbid).get(0).focus();
         return false;
     }
     var url = debug_base
@@ -23,7 +23,7 @@ function showFrame(anchor) {
                     el.innerHTML = data.responseText;
                     anchor.expandedElement = el;
                     _swapImage(anchor);
-                    $('#debug_input_'+tbid).focus();
+                    $('#debug_input_'+tbid).get(0).focus();
                 });
     return false;
 }
@@ -39,8 +39,8 @@ function _swapImage(anchor) {
 }
 
 function submitInput(button, tbid) {
-    var input = $('#' + button.getAttribute('input-from'));
-    var output = $('#' + button.getAttribute('output-to'));
+    var input = $('#' + button.getAttribute('input-from')).get(0);
+    var output = $('#' + button.getAttribute('output-to')).get(0);
     var url = debug_base
         + '/exec_input';
     var history = input.form.history;
@@ -65,19 +65,19 @@ function submitInput(button, tbid) {
 }
 
 function showError(msg) {
-    var el = $('#error-container');
+    var el = $('#error-container').get(0);
     if (el.innerHTML) {
         el.innerHTML += '<hr noshade>\n' + msg;
     } else {
         el.innerHTML = msg;
     }
-    showElement($('#error-area'));
+    showElement($('#error-area').get(0));
 }
 
 function clearError() {
-    var el = $('#error-container');
+    var el = $('#error-container').get(0);
     el.innerHTML = '';
-    hideElement($('#error-area'));
+    $('#error-area').hide();
 }
 
 function expandInput(button) {

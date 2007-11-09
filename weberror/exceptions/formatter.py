@@ -335,6 +335,7 @@ def format_html(exc_data, include_hidden_frames=False, **ops):
     ops['show_extra_data'] = False
     long_er, head_html = format_html(exc_data, show_hidden_frames=True, **ops)
     text_er, head_text = format_text(exc_data, show_hidden_frames=True, **ops)
+    xml_er, head_xml = format_xml(exc_data, show_hidden_frames=True, **ops)
     return """
     %s
     %s
@@ -348,11 +349,15 @@ def format_html(exc_data, include_hidden_frames=False, **ops):
     <br>
     <script type="text/javascript">
     show_button('text_version', 'text version')
+    show_button('xml_version', 'xml version')
     </script>
     <div id="text_version" class="hidden-data">
     <textarea style="width: 100%%" rows=10 cols=60>%s</textarea>
     </div>
-    """ % (head_html, short_er, long_er, cgi.escape(text_er))
+    <div id="xml_version" class="hidden-data">
+    <textarea style="width: 100%%" rows=10 cols=60>%s</textarea>
+    </div>
+    """ % (head_html, short_er, long_er, cgi.escape(text_er), cgi.escape(xml_er))
 
         
 def format_text(exc_data, **ops):
