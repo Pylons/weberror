@@ -11,7 +11,7 @@ function showFrame(anchor) {
     if (anchor.expandedElement) {
         showElement(anchor.expandedElement);
         _swapImage(anchor);
-        $('debug_input_'+tbid).focus();
+        $('#debug_input_'+tbid).focus();
         return false;
     }
     var url = debug_base
@@ -23,7 +23,7 @@ function showFrame(anchor) {
                     el.innerHTML = data.responseText;
                     anchor.expandedElement = el;
                     _swapImage(anchor);
-                    $('debug_input_'+tbid).focus();
+                    $('#debug_input_'+tbid).focus();
                 });
     return false;
 }
@@ -39,8 +39,8 @@ function _swapImage(anchor) {
 }
 
 function submitInput(button, tbid) {
-    var input = $(button.getAttribute('input-from'));
-    var output = $(button.getAttribute('output-to'));
+    var input = $('#' + button.getAttribute('input-from'));
+    var output = $('#' + button.getAttribute('output-to'));
     var url = debug_base
         + '/exec_input';
     var history = input.form.history;
@@ -65,19 +65,19 @@ function submitInput(button, tbid) {
 }
 
 function showError(msg) {
-    var el = $('error-container');
+    var el = $('#error-container');
     if (el.innerHTML) {
         el.innerHTML += '<hr noshade>\n' + msg;
     } else {
         el.innerHTML = msg;
     }
-    showElement($('error-area'));
+    showElement($('#error-area'));
 }
 
 function clearError() {
-    var el = $('error-container');
+    var el = $('#error-container');
     el.innerHTML = '';
-    hideElement($('error-area'));
+    hideElement($('#error-area'));
 }
 
 function expandInput(button) {
@@ -235,6 +235,21 @@ function callbackXHR(url, data, callback) {
     }
 }
 
-function $(elementId) {
-    return document.getElementById(elementId);
+function switch_display(id) {
+    ids = ['extra_data', 'template_data', 'traceback_data'];
+    for (i in ids){
+        part = ids[i];
+        var el = document.getElementById(part);
+        el.className = "hidden-data";
+        var el = document.getElementById(part+'_tab');
+        el.className = "not-active";
+        var el = document.getElementById(part+'_link');
+        el.className = "not-active";
+    }
+    var el = document.getElementById(id);
+    el.className = "active";
+    var el = document.getElementById(id+'_link');
+    el.className = "active";
+    var el = document.getElementById(id+'_tab');
+    el.className = "active";
 }

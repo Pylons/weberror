@@ -1,0 +1,13 @@
+
+.red { color:#FF0000; }
+.bold { font-weight: bold; }
+
+
+/* Mako Styles */
+
+.stacktrace { margin:5px 5px 5px 5px; }
+.highlight { padding:0px 10px 0px 10px; background-color:#9F9FDF; }
+.nonhighlight { padding:0px; background-color:#DFDFDF; }
+.sample { padding:10px; margin:10px 10px 10px 10px; font-family:monospace; font-size: 110%; }
+.sampleline { padding:0px 10px 0px 10px; }
+.sourceline { margin:5px 5px 10px 5px; font-family:monospace; font-size: 110%;}
