@@ -305,3 +305,33 @@ function switch_source(el, hide_type) {
     }
     return false;
 }
+
+$(document).ready(function() {
+    var hide_all = function() {
+        $('#short_text_version, #long_text_version, #short_traceback, #full_traceback, #xml_version').hide();
+    };
+    
+    if ($('#long_text_version').length == 0) {
+        $('#view_long_text').hide();
+    }
+    if ($('#full_traceback').length == 0) {
+        $('#view_long_html').hide();
+    }
+    
+    $('#view_short_text').click(function() {
+        hide_all();
+        $('#short_text_version').show();
+    });
+    $('#view_long_text').click(function() {
+        hide_all();
+        $('#long_text_version').show();
+    });
+    $('#view_short_html').click(function() {
+        hide_all();
+        $('#short_traceback').show();
+    });
+    $('#view_long_html').click(function () {
+        hide_all();
+        $('#full_traceback').show();
+    });
+});
