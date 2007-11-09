@@ -317,6 +317,7 @@ ul.large li a {
 
 h1.first{
     margin-top: 0px;
+    margin-bottom: 2px;
     border-bottom: 1px solid #666;
     background: #fFF;
     padding: 3px;
@@ -355,6 +356,25 @@ h4.asterix{
 }
 
 /* Boxes */
+
+#formats {
+    margin: 0 0 12px 14px;
+    font-size: 11px;
+    color: #888;
+    float: right;
+}
+
+#formats .title {
+    color: #222;
+}
+
+#formats a {
+    color: #33f;
+}
+
+#formats a:hover {
+    border-bottom: 1px solid #33f;
+}
 
 div.faq-box{
     /*border-style: solid;
@@ -523,6 +543,11 @@ a.switch_source:hover {
 .bold { font-weight: bold; }
 
 .hidden-data {display: none}
+
+#util-link a, #util-link a:link, #util-link a:visited,
+#util-link a:active {
+    border-bottom: 2px outset #aaa
+}
 
 /* Mako Styles */
 

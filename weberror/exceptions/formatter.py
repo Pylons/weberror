@@ -424,19 +424,12 @@ def format_html(exc_data, include_hidden_frames=False, **ops):
     xml_er, head_xml = format_xml(exc_data, show_hidden_frames=True, **ops)
     return """
     %s
+    <div id="short_traceback">
     %s
-    <br>
-    <script type="text/javascript">
-    show_button('full_traceback', 'full traceback')
-    </script>
+    </div>
     <div id="full_traceback" class="hidden-data">
     %s
     </div>
-    <br>
-    <script type="text/javascript">
-    show_button('text_version', 'text version')
-    show_button('xml_version', 'xml version')
-    </script>
     <div id="text_version" class="hidden-data">
     <textarea style="width: 100%%" rows=10 cols=60>%s</textarea>
     </div>

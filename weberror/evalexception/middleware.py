@@ -540,11 +540,6 @@ def format_eval_html(exc_data, base_path, counter):
     if extra_data_text:
         extra_data.append("""
         <br />
-        <div id="util-link">
-            <script type="text/javascript">
-            show_button('extra_data_text', 'text version')
-            </script>
-        </div>
         <div id="extra_data_text" class="hidden-data">
         <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
         </div>
@@ -556,23 +551,11 @@ def format_eval_html(exc_data, base_path, counter):
         # short version
         long_text_er = cgi.escape(long_text_er)
         full_traceback_html = """
-        <br />
-        <div id="util-link">
-            <script type="text/javascript">
-            show_button('full_traceback', 'full traceback')
-            </script>
-        </div>
         <div id="full_traceback" class="hidden-data">
         %s
-            <br />
-            <div id="util-link">
-                <script type="text/javascript">
-                show_button('long_text_version', 'full traceback text version')
-                </script>
-            </div>
-            <div id="long_text_version" class="hidden-data">
-            <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
-            </div>
+        </div>
+        <div id="long_text_version" class="hidden-data">
+        <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
         </div>
         """ % (long_er, len(long_text_er.splitlines()), long_text_er)
     else:
@@ -580,20 +563,8 @@ def format_eval_html(exc_data, base_path, counter):
 
     short_text_er = cgi.escape(short_text_er)
     return """
-    <style type="text/css">
-            #util-link a, #util-link a:link, #util-link a:visited,
-            #util-link a:active {
-                border-bottom: 2px outset #aaa
-            }
-    </style>
+    <div id="short_traceback">
     %s
-    <br />
-    <br />
-    <div id="util-link">
-        <script type="text/javascript">
-        show_button('short_text_version', 'text version')
-        show_button('xml_version', 'xml version')
-        </script>
     </div>
     <div id="short_text_version" class="hidden-data">
     <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>

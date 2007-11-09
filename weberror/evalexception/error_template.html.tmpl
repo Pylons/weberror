@@ -4,8 +4,6 @@
  <title>Server Error</title>
  {{head_html|html}}
 
-<script type="text/javascript" src="{{prefix}}/media/jquery-1.2.1.min.js"></script>
-<script type="text/javascript" src="{{prefix}}/media/debug.js"></script>
 <script type="text/javascript">
   debug_base = {{repr(prefix)}};
   debug_count = {{counter}};
@@ -56,16 +54,22 @@
                 {{template_data|html}}
             </div>
             <div id="traceback_data">
-
 <div style="float: left; width: 100%; padding-bottom: 20px;">
 <h1 class="first"><a name="content"></a>Error Traceback</h1>
+<div id="formats">
+   <span class="title">View as: &nbsp;</span> <a id="view_short_html" class="active" href="#">Interactive</a> 
+   <a id="view_long_html" href="#">(full)</a> &nbsp;|&nbsp; <a id="view_short_text" href="#">Text</a>  
+   <a id="view_long_text" href="#">(full)</a> &nbsp;|&nbsp; <a id="view_short_xml" href="#">XML</a> 
+   <a id="view_long_xml" href="#">(full)</a>
+</div>
+<div style="clear: both;">
 <div id="error-area" style="display: none; background-color: #600; color: #fff; border: 2px solid black">
 <button onclick="return clearError()">clear this</button>
 <div id="error-container"></div>
 <button onclick="return clearError()">clear this</button>
 </div>
 {{traceback_body|html}}
-<br />
+<br /><br /><br />
 <div class="feature-highlight">
 <b>Extra Features</b>
 <table border="0">
@@ -80,5 +84,7 @@
         <div class="hr"><hr class="clear" /></div>
         <!-- Footer -->
     </div>
+    <script type="text/javascript" src="{{prefix}}/media/jquery-1.2.1.min.js"></script>
+    <script type="text/javascript" src="{{prefix}}/media/debug.js"></script>
 </body>
 </html>
