@@ -253,3 +253,55 @@ function switch_display(id) {
     var el = document.getElementById(id+'_tab');
     el.className = "active";
 }
+
+function hide_display(id) {
+    var el = document.getElementById(id);
+    if (el.className == "hidden-data") {
+        el.className = "";
+        return true;
+    } else {
+        el.className = "hidden-data";
+        return false;
+    }
+}
+
+function show_button(toggle_id, name) {
+    document.write('<a href="#' + toggle_id
+        + '" onclick="javascript:hide_display(\'' + toggle_id
+        + '\')" class="button">' + name + '</a><br>');
+}
+
+function switch_source(el, hide_type) {
+    while (el) {
+        if (el.getAttribute &&
+            el.getAttribute('source-type') == hide_type) {
+            break;
+        }
+        el = el.parentNode;
+    }
+    if (! el) {
+        return false;
+    }
+    el.style.display = 'none';
+    if (hide_type == 'long') {
+        while (el) {
+            if (el.getAttribute &&
+                el.getAttribute('source-type') == 'short') {
+                break;
+            }
+            el = el.nextSibling;
+        }
+    } else {
+        while (el) {
+            if (el.getAttribute &&
+                el.getAttribute('source-type') == 'long') {
+                break;
+            }
+            el = el.previousSibling;
+        }
+    }
+    if (el) {
+        el.style.display = '';
+    }
+    return false;
+}

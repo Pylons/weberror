@@ -425,7 +425,7 @@ class DebugInfo(object):
 
     def content(self):
         traceback_body, extra_data = format_eval_html(self.exc_data, self.base_path, self.counter)
-        head_html = (formatter.error_css + formatter.hide_display_js)
+        head_html = ''
         repost_button = make_repost_button(self.environ)
         template_data = '<p>No Template information available.</p>'
         tab = 'traceback_data'

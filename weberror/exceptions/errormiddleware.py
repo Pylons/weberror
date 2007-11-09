@@ -361,7 +361,7 @@ def handle_exception(exc_info, error_stream, html=True,
                 exc_data,
                 include_hidden_frames=True,
                 include_reusable=False)
-            head_html = formatter.error_css + formatter.hide_display_js
+            head_html = ''
             return_error = error_template(
                 head_html, error_html, extra_data)
             extra_data = ''
