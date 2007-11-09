@@ -129,7 +129,7 @@ ul#navlist li a
 {
     /*font-family: Tahoma, sans-serif;
     font-size: 11px;font-weight: bold;*/
-    border: 0px;
+    border: 1px solid #fff;
     /*padding: 0em 1em;*/
     padding: 0 18px 0 18px;
     color: #000;
@@ -153,10 +153,8 @@ ul#navlist li a:hover
 ul#navlist li.active a.active,  ul#main-nav li.active a.active:hover
 {
     color: #b00;
-    background: #eee;
+    border: 1px solid #888;
 }
-
-
 
 
 
@@ -399,7 +397,7 @@ div.highlight-box{
 /* Utility Styles */
 
 .content-padding{
-    padding: 20px 6.5% 40px 6.5%;
+    padding: 0px 6.5% 40px 6.5%;
 }
 .sidebar-padding{
     padding: 15px 15px 40px 25px;
