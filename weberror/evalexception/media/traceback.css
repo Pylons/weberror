@@ -369,11 +369,16 @@ h4.asterix{
 }
 
 #formats a {
-    color: #33f;
+    color: #22a;
 }
 
 #formats a:hover {
     border-bottom: 1px solid #33f;
+}
+
+#formats a.active {
+    color: #0b0;
+    border-bottom: none;
 }
 
 div.faq-box{
