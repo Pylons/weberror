@@ -353,9 +353,15 @@ def format_html(exc_data, include_hidden_frames=False, **ops):
     <textarea style="width: 100%%" rows=10 cols=60>%s</textarea>
     </div>
     """ % (head_html, short_er, long_er, cgi.escape(text_er))
+
         
 def format_text(exc_data, **ops):
     return TextFormatter(**ops).format_collected_data(exc_data)
+
+
+def format_xml(exc_data, **ops):
+    return XMLFormatter(**ops).format_collected_data(exc_data)
+
 
 whitespace_re = re.compile(r'  +')
 pre_re = re.compile(r'</?pre.*?>')
