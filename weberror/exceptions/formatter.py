@@ -381,11 +381,12 @@ class XMLFormatter(AbstractFormatter):
         name = frame.name or '?'
         xml_frame.appendChild(create_text_node(newdoc, 'module', frame.modname or '?'))
         xml_frame.appendChild(create_text_node(newdoc, 'filename', filename))
-        xml_frame.appendChild(create_text_node(newdoc, 'lineno', frame.lineno or '?'))
+        xml_frame.appendChild(create_text_node(newdoc, 'line', frame.lineno or '?'))
         xml_frame.appendChild(create_text_node(newdoc, 'function', name))
     
     def format_long_source(self, source, long_source, newdoc, xml_frame):
-        xml_frame.appendChild(create_text_node(newdoc, 'source', source.strip()))
+        xml_frame.appendChild(create_text_node(newdoc, 'operation', source.strip()))
+        xml_frame.appendChild(create_text_node(newdoc, 'operation_context', long_source))
 
     def format_exception_info(self, etype, evalue, newdoc):
         exception = newdoc.createElement('exception')
