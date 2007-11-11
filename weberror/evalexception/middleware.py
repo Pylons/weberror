@@ -541,7 +541,9 @@ def format_eval_html(exc_data, base_path, counter):
     long_er, extra_data_none = long_formatter.format_collected_data(exc_data)
     long_text_er = formatter.format_text(exc_data, show_hidden_frames=True,
                                          show_extra_data=False)[0]
-    xml_er = formatter.format_xml(exc_data, show_hidden_frames=True, 
+    long_xml_er = formatter.format_xml(exc_data, show_hidden_frames=True, 
+                                  show_extra_data=False)[0]
+    short_xml_er = formatter.format_xml(exc_data, show_hidden_frames=False, 
                                   show_extra_data=False)[0]
     extra_data_text = format_extra_data_text(exc_data)
     if extra_data_text:
@@ -569,6 +571,15 @@ def format_eval_html(exc_data, base_path, counter):
         full_traceback_html = ''
 
     short_text_er = cgi.escape(short_text_er)
+    
+    long_xml_leng = len(long_xml_er.splitlines())
+    if long_xml_leng > 50:
+        long_xml_leng = 50
+
+    short_xml_leng = len(short_xml_er.splitlines())
+    if short_xml_leng > 50:
+        short_xml_leng = 50
+
     return """
     <div id="short_traceback">
     %s
@@ -576,12 +587,17 @@ def format_eval_html(exc_data, base_path, counter):
     <div id="short_text_version" class="hidden-data">
     <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
     </div>
-    <div id="xml_version" class="hidden-data">
+    <div id="long_xml_version" class="hidden-data">
+    <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
+    </div>
+    <div id="short_xml_version" class="hidden-data">
     <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
     </div>
     %s
     """ % (short_er, len(short_text_er.splitlines()), short_text_er,
-           len(xml_er.splitlines()), cgi.escape(xml_er), full_traceback_html), extra_data
+           long_xml_leng, cgi.escape(long_xml_er), 
+           short_xml_leng, cgi.escape(short_xml_er), 
+           full_traceback_html), extra_data
 
 def format_extra_data_text(exc_data):
     """ Return a text representation of the 'extra_data' dict when one exists """
