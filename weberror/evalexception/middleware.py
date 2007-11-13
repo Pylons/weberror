@@ -367,10 +367,10 @@ class EvalException(object):
             if self.xmlhttp_key:
                 if self.xmlhttp_key in req.params:
                     exc_data = collector.collect_exception(*exc_info)
-                    html = formatter.format_html(
+                    html, extra_html = formatter.format_html(
                         exc_data, include_hidden_frames=False,
                         include_reusable=False, show_extra_data=False)
-                    return [html]
+                    return [html, extra_html]
 
             # @@: it would be nice to deal with bad content types here
             return debug_info.content()
