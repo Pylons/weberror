@@ -183,10 +183,13 @@ class EvalException(object):
     def __init__(self, application, global_conf=None,
                  error_template_filename=os.path.join(os.path.dirname(__file__), 'error_template.html.tmpl'),
                  xmlhttp_key=None, media_paths=None, 
-                 templating_formatters=None, **params):
+                 templating_formatters=None, head_html='', footer_html='', 
+                 **params):
         self.application = application
         self.debug_infos = {}
         self.templating_formatters = templating_formatters or []
+        self.head_html = HTMLTemplate(head_html)
+        self.footer_html = HTMLTemplate(footer_html)
         if xmlhttp_key is None:
             if global_conf is None:
                 xmlhttp_key = '_'
@@ -360,7 +363,8 @@ class EvalException(object):
             exc_data = collector.collect_exception(*exc_info)
             debug_info = DebugInfo(count, exc_info, exc_data, base_path,
                                    environ, view_uri, self.error_template,
-                                   self.templating_formatters)
+                                   self.templating_formatters, self.head_html,
+                                   self.footer_html)
             assert count not in self.debug_infos
             self.debug_infos[count] = debug_info
 
@@ -379,7 +383,8 @@ class EvalException(object):
 class DebugInfo(object):
 
     def __init__(self, counter, exc_info, exc_data, base_path,
-                 environ, view_uri, error_template, templating_formatters):
+                 environ, view_uri, error_template, templating_formatters, 
+                 head_html, footer_html):
         self.counter = counter
         self.exc_data = exc_data
         self.base_path = base_path
@@ -388,6 +393,8 @@ class DebugInfo(object):
         self.error_template = error_template
         self.created = time.time()
         self.templating_formatters = templating_formatters
+        self.head_html = head_html
+        self.footer_html = footer_html
         self.exc_type, self.exc_value, self.tb = exc_info
         __exception_formatter__ = 1
         self.frames = []
@@ -425,7 +432,6 @@ class DebugInfo(object):
 
     def content(self):
         traceback_body, extra_data = format_eval_html(self.exc_data, self.base_path, self.counter)
-        head_html = (formatter.error_css + formatter.hide_display_js)
         repost_button = make_repost_button(self.environ)
         template_data = '<p>No Template information available.</p>'
         tab = 'traceback_data'
@@ -440,7 +446,8 @@ class DebugInfo(object):
         template_data = template_data.replace('<h2>', '<h1 class="first">')
         template_data = template_data.replace('</h2>', '</h1>')
         page = self.error_template.substitute(
-            head_html=head_html,
+            head_html=self.head_html.substitute(prefix=self.base_path),
+            footer_html=self.footer_html.substitute(prefix=self.base_path),
             repost_button=repost_button or '',
             traceback_body=traceback_body,
             extra_data=extra_data,
@@ -533,16 +540,15 @@ def format_eval_html(exc_data, base_path, counter):
         include_reusable=False)
     long_er, extra_data_none = long_formatter.format_collected_data(exc_data)
     long_text_er = formatter.format_text(exc_data, show_hidden_frames=True,
-                                         show_extra_data=False)
+                                         show_extra_data=False)[0]
+    long_xml_er = formatter.format_xml(exc_data, show_hidden_frames=True, 
+                                  show_extra_data=False)[0]
+    short_xml_er = formatter.format_xml(exc_data, show_hidden_frames=False, 
+                                  show_extra_data=False)[0]
     extra_data_text = format_extra_data_text(exc_data)
     if extra_data_text:
         extra_data.append("""
         <br />
-        <div id="util-link">
-            <script type="text/javascript">
-            show_button('extra_data_text', 'text version')
-            </script>
-        </div>
         <div id="extra_data_text" class="hidden-data">
         <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
         </div>
@@ -554,49 +560,43 @@ def format_eval_html(exc_data, base_path, counter):
         # short version
         long_text_er = cgi.escape(long_text_er)
         full_traceback_html = """
-        <br />
-        <div id="util-link">
-            <script type="text/javascript">
-            show_button('full_traceback', 'full traceback')
-            </script>
-        </div>
         <div id="full_traceback" class="hidden-data">
         %s
-            <br />
-            <div id="util-link">
-                <script type="text/javascript">
-                show_button('long_text_version', 'full traceback text version')
-                </script>
-            </div>
-            <div id="long_text_version" class="hidden-data">
-            <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
-            </div>
+        </div>
+        <div id="long_text_version" class="hidden-data">
+        <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
         </div>
         """ % (long_er, len(long_text_er.splitlines()), long_text_er)
     else:
         full_traceback_html = ''
 
     short_text_er = cgi.escape(short_text_er)
+    
+    long_xml_leng = len(long_xml_er.splitlines())
+    if long_xml_leng > 50:
+        long_xml_leng = 50
+
+    short_xml_leng = len(short_xml_er.splitlines())
+    if short_xml_leng > 50:
+        short_xml_leng = 50
+
     return """
-    <style type="text/css">
-            #util-link a, #util-link a:link, #util-link a:visited,
-            #util-link a:active {
-                border-bottom: 2px outset #aaa
-            }
-    </style>
+    <div id="short_traceback">
     %s
-    <br />
-    <br />
-    <div id="util-link">
-        <script type="text/javascript">
-        show_button('short_text_version', 'text version')
-        </script>
     </div>
     <div id="short_text_version" class="hidden-data">
     <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
     </div>
+    <div id="long_xml_version" class="hidden-data">
+    <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
+    </div>
+    <div id="short_xml_version" class="hidden-data">
+    <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
+    </div>
     %s
     """ % (short_er, len(short_text_er.splitlines()), short_text_er,
+           long_xml_leng, cgi.escape(long_xml_er), 
+           short_xml_leng, cgi.escape(short_xml_er), 
            full_traceback_html), extra_data
 
 def format_extra_data_text(exc_data):
@@ -656,7 +656,7 @@ def make_repost_button(environ):
 
 input_form = HTMLTemplate('''
 <form action="#" method="POST"
- onsubmit="return submitInput($(\'submit_{{tbid}}\'), {{tbid}})">
+ onsubmit="return submitInput($(\'#submit_{{tbid}}\').get(0), {{tbid}})">
 <div id="exec-output-{{tbid}}" style="width: 95%;
  padding: 5px; margin: 5px; border: 2px solid #000;
  display: none"></div>

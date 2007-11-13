@@ -275,6 +275,7 @@ class ExceptionCollector(object):
         data['revision'] = self.getRevision(globals)
         data['name'] = name
         data['tbid'] = id(tb)
+        data['locals'] = locals
 
         # Output a traceback supplement, if any.
         if locals.has_key('__traceback_supplement__'):

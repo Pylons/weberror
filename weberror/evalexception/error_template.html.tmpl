@@ -2,67 +2,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
  <title>Server Error</title>
- {{head_html|html}}
 
-<script type="text/javascript" src="{{prefix}}/media/debug.js"></script>
 <script type="text/javascript">
   debug_base = {{repr(prefix)}};
   debug_count = {{counter}};
 </script>
 
-<style type="text/css">
-        .red {
-            color:#FF0000;
-        }
-        .bold {
-            font-weight: bold;
-        }
-</style>
-<script type="text/javascript">
-
-if (document.images)
-{
-  pic1= new Image(100,25);
-  pic1.src="{{prefix}}/media/pylons/img/tab-yellow.png";
-}
-
-function switch_display(id) {
-    ids = ['extra_data', 'template_data', 'traceback_data']
-    for (i in ids){
-        part = ids[i]
-        var el = document.getElementById(part);
-        el.className = "hidden-data";
-        var el = document.getElementById(part+'_tab');
-        el.className = "not-active";
-        var el = document.getElementById(part+'_link');
-        el.className = "not-active";
-    }
-    var el = document.getElementById(id);
-    el.className = "active";
-    var el = document.getElementById(id+'_link');
-    el.className = "active";
-    var el = document.getElementById(id+'_tab');
-    el.className = "active";
-}
-</script>
-
-
-
 <!-- CSS Imports -->
-<link rel="stylesheet" href="{{prefix}}/media/pylons/style/orange.css" type="text/css" media="screen" />
-
-<!-- Favorite Icons -->
-<link rel="icon" href="{{prefix}}/media/pylons/img/icon-16.png" type="image/png" />
-
-<!-- Mako Styles -->
-<style type="text/css">
-    .stacktrace { margin:5px 5px 5px 5px; }
-    .highlight { padding:0px 10px 0px 10px; background-color:#9F9FDF; }
-    .nonhighlight { padding:0px; background-color:#DFDFDF; }
-    .sample { padding:10px; margin:10px 10px 10px 10px; font-family:monospace; font-size: 110%; }
-    .sampleline { padding:0px 10px 0px 10px; }
-    .sourceline { margin:5px 5px 10px 5px; font-family:monospace; font-size: 110%;}
-</style>
+<link rel="stylesheet" href="{{prefix}}/media/traceback.css" type="text/css" media="screen" />
+{{head_html|html}}
 
 </head>
 
@@ -72,17 +20,13 @@ function switch_display(id) {
 <noscript>
 <div style="border-bottom: 1px solid #808080">
 <div style="border-bottom: 1px solid #404040">
-<table width="100%" border="0" cellpadding="0" bgcolor="#FFFFE1"><tr><td valign="middle"><img src="{{prefix}}/media/pylons/img/warning.gif" alt="Warning" /></td><td>&nbsp;</td><td><span style="padding: 0px; margin: 0px; font-family: Tahoma, sans-serif; font-size: 11px">Warning, your browser does not support JavaScript so you will not be able to use the interactive debugging on this page.</span></td></tr></table>
+<table width="100%" border="0" cellpadding="0" bgcolor="#FFFFE1"><tr><td>&nbsp;</td><td><span style="padding: 0px; margin: 0px; font-family: Tahoma, sans-serif; font-size: 11px">Warning, your browser does not support JavaScript so you will not be able to use the interactive debugging on this page.</span></td></tr></table>
 </div>
 </div>
 </noscript>
 
     <!-- Top anchor -->
     <a name="top"></a>
-
-    <!-- Logo -->
-    <h1 id="logo"><a class="no-underline" href="http://pylonshq.com"><img class="no-border" src="{{prefix}}/media/pylons/img/logo.gif" alt="Pylons" title="Pylons"/></a></h1>
-    <p class="invisible"><a href="#content">Skip to content</a></p>
 
     <!-- Main Content -->
     <div id="nav-bar">
@@ -92,9 +36,9 @@ function switch_display(id) {
 
             <ul id="navlist">
                <!--  {{#links|html}} -->
-                <li id='traceback_data_tab' class="active"><a href="javascript:switch_display('traceback_data')" id='traceback_data_link' class="active"  accesskey="1">Traceback</a></li>
-                <li id='extra_data_tab' class="" ><a href="javascript:switch_display('extra_data')" id='extra_data_link' accesskey="2" >Extra Data</a></li>
-                <li id='template_data_tab'><a href="javascript:switch_display('template_data')" accesskey="3" id='template_data_link'>Template</a></li>
+               <li id='template_data_tab'><a href="javascript:switch_display('template_data')" accesskey="3" id='template_data_link'>Template</a></li>
+               <li id='extra_data_tab' class="" ><a href="javascript:switch_display('extra_data')" id='extra_data_link' accesskey="2" >Extra Data</a></li>
+               <li id='traceback_data_tab' class="active"><a href="javascript:switch_display('traceback_data')" id='traceback_data_link' class="active"  accesskey="1">Traceback</a></li>
             </ul>
     </div>
     <div id="main-content">
@@ -110,17 +54,23 @@ function switch_display(id) {
                 {{template_data|html}}
             </div>
             <div id="traceback_data">
-
 <div style="float: left; width: 100%; padding-bottom: 20px;">
 <h1 class="first"><a name="content"></a>Error Traceback</h1>
+<div id="formats">
+   <span class="title">View as: &nbsp;</span> <a id="view_short_html" class="active" href="#">Interactive</a> 
+   <a id="view_long_html" href="#">(full)</a> &nbsp;|&nbsp; <a id="view_short_text" href="#">Text</a>  
+   <a id="view_long_text" href="#">(full)</a> &nbsp;|&nbsp; <a id="view_short_xml" href="#">XML</a> 
+   <a id="view_long_xml" href="#">(full)</a>
+</div>
+<div style="clear: both;">
 <div id="error-area" style="display: none; background-color: #600; color: #fff; border: 2px solid black">
 <button onclick="return clearError()">clear this</button>
 <div id="error-container"></div>
 <button onclick="return clearError()">clear this</button>
 </div>
 {{traceback_body|html}}
-<br />
-<div class="highlight" style="padding: 20px;">
+<br /><br /><br />
+<div class="feature-highlight">
 <b>Extra Features</b>
 <table border="0">
 <tr><td>&gt;&gt;</td><td>Display the lines of code near each part of the traceback</td></tr>
@@ -132,11 +82,10 @@ function switch_display(id) {
         </div>
         <br class="clear" />
         <div class="hr"><hr class="clear" /></div>
-        <!-- Footer -->
     </div>
-    <div style=" background: #FFFF99; padding: 10px 10px 10px 6%">
-        The Pylons Team |
-        <a href="#top" accesskey="9" title="Return to the top of the navigation links">Top</a>
-    </div>
+    <!-- Footer -->
+    <div id="footer">{{footer_html|html}}</div>
+    <script type="text/javascript" src="{{prefix}}/media/jquery-1.2.1.min.js"></script>
+    <script type="text/javascript" src="{{prefix}}/media/debug.js"></script>
 </body>
 </html>
