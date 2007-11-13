@@ -9,7 +9,9 @@ Formatters for the exception data that comes from ExceptionCollector.
 
 import cgi
 import re
-from weberror.util import PySourceColor
+import sys
+from paste.util import PySourceColor
+from xml.dom.minidom import getDOMImplementation
 
 def html_quote(s):
     return cgi.escape(str(s), True)
@@ -291,7 +293,7 @@ class HTMLFormatter(TextFormatter):
             extra_data.extend([value for n, value in data_by_importance['extra']])
         text = self.format_combine_lines(lines)
         if self.include_reusable:
-            return error_css + hide_display_js + text, extra_data
+            return text, extra_data
         else:
             # Usually because another error is already on this page,
             # and so the js & CSS are unneeded
@@ -320,120 +322,79 @@ class HTMLFormatter(TextFormatter):
         table.append('</table>')
         return '\n'.join(table)
 
-hide_display_js = r'''
-<script type="text/javascript">
-function hide_display(id) {
-    var el = document.getElementById(id);
-    if (el.className == "hidden-data") {
-        el.className = "";
-        return true;
-    } else {
-        el.className = "hidden-data";
-        return false;
-    }
-}
-document.write('<style type="text/css">\n');
-document.write('.hidden-data {display: none}\n');
-document.write('</style>\n');
-function show_button(toggle_id, name) {
-    document.write('<a href="#' + toggle_id
-        + '" onclick="javascript:hide_display(\'' + toggle_id
-        + '\')" class="button">' + name + '</a><br>');
-}
+def create_text_node(doc, elem, text):
+    if not isinstance(text, basestring):
+        text = repr(text)
+    new_elem = doc.createElement(elem)
+    new_elem.appendChild(doc.createTextNode(text))
+    return new_elem
 
-function switch_source(el, hide_type) {
-    while (el) {
-        if (el.getAttribute &&
-            el.getAttribute('source-type') == hide_type) {
-            break;
-        }
-        el = el.parentNode;
-    }
-    if (! el) {
-        return false;
-    }
-    el.style.display = 'none';
-    if (hide_type == 'long') {
-        while (el) {
-            if (el.getAttribute &&
-                el.getAttribute('source-type') == 'short') {
-                break;
-            }
-            el = el.nextSibling;
-        }
-    } else {
-        while (el) {
-            if (el.getAttribute &&
-                el.getAttribute('source-type') == 'long') {
-                break;
-            }
-            el = el.previousSibling;
-        }
-    }
-    if (el) {
-        el.style.display = '';
-    }
-    return false;
-}
-
-</script>'''
+class XMLFormatter(AbstractFormatter):
+    def format_collected_data(self, exc_data):
+        impl = getDOMImplementation()
+        newdoc = impl.createDocument(None, "traceback", None)
+        top_element = newdoc.documentElement
+        
+        sysinfo = newdoc.createElement('sysinfo')
+        language = create_text_node(newdoc, 'language', 'Python')
+        language.attributes['version'] = sys.version.split(' ')[0]
+        sysinfo.appendChild(language)
+        top_element.appendChild(sysinfo)
+        
+        frames = self.filter_frames(exc_data.frames)
+        stack = newdoc.createElement('stack')
+        top_element.appendChild(stack)
+        for frame in frames:
+            xml_frame = newdoc.createElement('frame')
+            stack.appendChild(xml_frame)
+            
+            filename = frame.filename
+            if filename and self.trim_source_paths:
+                for path, repl in self.trim_source_paths:
+                    if filename.startswith(path):
+                        filename = repl + filename[len(path):]
+                        break
+            self.format_source_line(filename or '?', frame, newdoc, xml_frame)
+            
+            source = frame.get_source_line()
+            long_source = frame.get_source_line(2)
+            if source:
+                self.format_long_source(source, long_source, newdoc, xml_frame)
+            
+            variables = newdoc.createElement('variables')
+            xml_frame.appendChild(variables)
+            for name, value in frame.locals.iteritems():
+                variable = newdoc.createElement('variable')
+                variable.appendChild(create_text_node(newdoc, 'name', name))
+                variable.appendChild(create_text_node(newdoc, 'value', value))
+                variables.appendChild(variable)
+        
+        etype = exc_data.exception_type
+        if not isinstance(etype, basestring):
+            etype = etype.__name__
+        
+        top_element.appendChild(self.format_exception_info(
+            etype, exc_data.exception_value, newdoc))
+        return newdoc.toprettyxml(), ''
     
+    def format_source_line(self, filename, frame, newdoc, xml_frame):
+        name = frame.name or '?'
+        xml_frame.appendChild(create_text_node(newdoc, 'module', frame.modname or '?'))
+        xml_frame.appendChild(create_text_node(newdoc, 'filename', filename))
+        xml_frame.appendChild(create_text_node(newdoc, 'line', frame.lineno or '?'))
+        xml_frame.appendChild(create_text_node(newdoc, 'function', name))
+    
+    def format_long_source(self, source, long_source, newdoc, xml_frame):
+        xml_frame.appendChild(create_text_node(newdoc, 'operation', source.strip()))
+        xml_frame.appendChild(create_text_node(newdoc, 'operation_context', long_source))
 
-error_css = """
-<style type="text/css">
-body {
-  font-family: Helvetica, sans-serif;
-}
+    def format_exception_info(self, etype, evalue, newdoc):
+        exception = newdoc.createElement('exception')
+        exception.appendChild(create_text_node(newdoc, 'type', etype))
+        exception.appendChild(create_text_node(newdoc, 'value', evalue))
+        return exception
 
-table {
-  width: 100%;
-}
-
-tr.header {
-  background-color: #006;
-  color: #fff;
-}
-
-tr.even {
-  background-color: #ddd;
-}
-
-table.variables td {
-  vertical-align: top;
-  overflow: auto;
-}
-
-a.button {
-  background-color: #ccc;
-  border: 2px outset #aaa;
-  color: #000;
-  text-decoration: none;
-}
-
-a.button:hover {
-  background-color: #ddd;
-}
-
-code.source {
-  color: #006;
-}
-
-a.switch_source {
-  color: #090;
-  text-decoration: none;
-}
-
-a.switch_source:hover {
-  background-color: #ddd;
-}
-
-.source-highlight {
-  background-color: #ff9;
-}
-
-</style>
-"""
-
+    
 def format_html(exc_data, include_hidden_frames=False, **ops):
     if not include_hidden_frames:
         return HTMLFormatter(**ops).format_collected_data(exc_data)
@@ -444,27 +405,31 @@ def format_html(exc_data, include_hidden_frames=False, **ops):
     ops['show_extra_data'] = False
     long_er, head_html = format_html(exc_data, show_hidden_frames=True, **ops)
     text_er, head_text = format_text(exc_data, show_hidden_frames=True, **ops)
+    xml_er, head_xml = format_xml(exc_data, show_hidden_frames=True, **ops)
     return """
     %s
+    <div id="short_traceback">
     %s
-    <br>
-    <script type="text/javascript">
-    show_button('full_traceback', 'full traceback')
-    </script>
+    </div>
     <div id="full_traceback" class="hidden-data">
     %s
     </div>
-    <br>
-    <script type="text/javascript">
-    show_button('text_version', 'text version')
-    </script>
     <div id="text_version" class="hidden-data">
     <textarea style="width: 100%%" rows=10 cols=60>%s</textarea>
     </div>
-    """ % (head_html, short_er, long_er, cgi.escape(text_er))
+    <div id="xml_version" class="hidden-data">
+    <textarea style="width: 100%%" rows=10 cols=60>%s</textarea>
+    </div>
+    """ % (head_html, short_er, long_er, cgi.escape(text_er), cgi.escape(xml_er))
+
         
 def format_text(exc_data, **ops):
     return TextFormatter(**ops).format_collected_data(exc_data)
+
+
+def format_xml(exc_data, **ops):
+    return XMLFormatter(**ops).format_collected_data(exc_data)
+
 
 whitespace_re = re.compile(r'  +')
 pre_re = re.compile(r'</?pre.*?>')
