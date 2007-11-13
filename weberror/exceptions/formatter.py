@@ -10,7 +10,7 @@ Formatters for the exception data that comes from ExceptionCollector.
 import cgi
 import re
 import sys
-from paste.util import PySourceColor
+from weberror.util import PySourceColor
 from xml.dom.minidom import getDOMImplementation
 
 def html_quote(s):
