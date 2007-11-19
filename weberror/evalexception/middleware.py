@@ -166,10 +166,15 @@ def get_debug_count(req):
         environ = req.environ
     else:
         environ = req
-    if 'weberror.evalexception.debug_count' in environ:
+    # XXX: Legacy support for Paste restorer
+    if 'paste.evalexception.debug_count' in environ:
+        return environ['paste.evalexception.debug_count']
+    elif 'weberror.evalexception.debug_count' in environ:
         return environ['weberror.evalexception.debug_count']
     else:
-        environ['weberror.evalexception.debug_count'] = next = debug_counter.next()
+        next = debug_counter.next()
+        environ['weberror.evalexception.debug_count'] = next
+        environ['paste.evalexception.debug_count'] = next
         return next
 
 
@@ -205,7 +210,9 @@ class EvalException(object):
         assert not environ['wsgi.multiprocess'], (
             "The EvalException middleware is not usable in a "
             "multi-process environment")
-        environ['weberror.evalexception'] = self
+        # XXX: Legacy support for Paste restorer
+        environ['weberror.evalexception'] = environ['paste.evalexception'] = \
+            self
         req = Request(environ)
         if req.path_info_peek() == '_debug':
             return self.debug(req)(environ, start_response)
