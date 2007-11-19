@@ -135,9 +135,7 @@ ul#navlist li a
     color: #000;
     margin-right: 9px;
     text-decoration: none;
-    float: right;
-    
-    background:  url('../img/tab-brown.png') no-repeat top right;
+    float: right;    
 }
 ul#navlist  li a#highlight , ul#navlist li a#highlight:hover
 {
