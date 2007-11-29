@@ -324,30 +324,36 @@ $(document).ready(function() {
         hide_all();
         $('#short_text_version').show();
         $(this).addClass('active');
+        return false;
     });
     $('#view_long_text').click(function() {
         hide_all();
         $('#long_text_version').show();
         $(this).addClass('active');
+        return false;
     });
     $('#view_short_html').click(function() {
         hide_all();
         $('#short_traceback, div.feature-highlight').show();
         $(this).addClass('active');
+        return false;
     });
     $('#view_long_html').click(function () {
         hide_all();
         $('#full_traceback, div.feature-highlight').show();
         $(this).addClass('active');
+        return false;
     });
     $('#view_short_xml').click(function () {
         hide_all();
         $('#short_xml_version').show();
         $(this).addClass('active');
+        return false;
     });
     $('#view_long_xml').click(function () {
         hide_all();
         $('#long_xml_version').show();
         $(this).addClass('active');
+        return false;
     });
 });
