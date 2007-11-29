@@ -552,14 +552,6 @@ def format_eval_html(exc_data, base_path, counter):
                                   show_extra_data=False)[0]
     short_xml_er = formatter.format_xml(exc_data, show_hidden_frames=False, 
                                   show_extra_data=False)[0]
-    extra_data_text = format_extra_data_text(exc_data)
-    if extra_data_text:
-        extra_data.append("""
-        <br />
-        <div id="extra_data_text" class="hidden-data">
-        <textarea style="width: 100%%" rows=%s cols=60>%s</textarea>
-        </div>
-        """ % (len(extra_data_text.splitlines()), extra_data_text))
     
     if short_formatter.filter_frames(exc_data.frames) != \
         long_formatter.filter_frames(exc_data.frames):
@@ -605,31 +597,6 @@ def format_eval_html(exc_data, base_path, counter):
            long_xml_leng, cgi.escape(long_xml_er), 
            short_xml_leng, cgi.escape(short_xml_er), 
            full_traceback_html), extra_data
-
-def format_extra_data_text(exc_data):
-    """ Return a text representation of the 'extra_data' dict when one exists """
-    extra_data_text = ''
-    if not exc_data.extra_data:
-        return extra_data_text
-
-    text_formatter = formatter.TextFormatter()
-    by_title = {}
-    for name, value_list in exc_data.extra_data.items():
-        if isinstance(name, tuple):
-            importance, title = name
-        else:
-            importance, title = 'normal', name
-        if importance != 'extra':
-            continue
-        for value in value_list:
-            by_title[title] = text_formatter.format_extra_data(importance, title, value)
-
-    titles = by_title.keys()
-    titles.sort()
-    for title in titles:
-        extra_data_text += by_title[title]
-    return extra_data_text
-
 
 def make_repost_button(environ):
     url = request.construct_url(environ)
