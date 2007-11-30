@@ -43,6 +43,9 @@ class AbstractFormatter(object):
         lines = []
         frames = self.filter_frames(exc_data.frames)
         for frame in frames:
+            res = self.format_frame_start(frame)
+            if res:
+                lines.append(res)
             sup = frame.supplement
             if sup:
                 if sup.object:
@@ -77,6 +80,9 @@ class AbstractFormatter(object):
             if source:
                 lines.append(self.format_long_source(
                     source, long_source))
+            res = self.format_frame_end(frame)
+            if res:
+                lines.append(res)
         etype = exc_data.exception_type
         if not isinstance(etype, basestring):
             etype = etype.__name__
@@ -135,6 +141,18 @@ class AbstractFormatter(object):
             # so we just have to show everything
             return frames
         return new_frames
+
+    def format_frame_start(self, frame):
+        """
+        Called before each frame starts; may return None to output no text.
+        """
+        return None
+
+    def format_frame_end(self, frame):
+        """
+        Called after each frame ends; may return None to output no text.
+        """
+        return None
 
     def pretty_string_repr(self, s):
         """
@@ -246,7 +264,13 @@ class HTMLFormatter(TextFormatter):
     def format_sup_url(self, url):
         return 'URL: <a href="%s">%s</a>' % (url, url)
     def format_combine_lines(self, lines):
-        return '<br>\n'.join(lines)
+        ## FIXME: this is horrible:
+        new_lines = []
+        for line in lines:
+            if not line.startswith('<div') and not line.endswith('</div>'):
+                line += '<br>'
+            new_lines.append(line)
+        return '\n'.join(new_lines)
     def format_source_line(self, filename, frame):
         name = self.quote(frame.name or '?')
         return 'Module <span class="module" title="%s">%s</span>:<b>%s</b> in <code>%s</code>' % (
@@ -265,6 +289,11 @@ class HTMLFormatter(TextFormatter):
         return '&nbsp;&nbsp;<code class="source">%s</code>' % self.quote(source_line.strip())
     def format_traceback_info(self, info):
         return '<pre>%s</pre>' % self.quote(info)
+    def format_frame_start(self, frame):
+        ## FIXME: make it zebra?
+        return '<div class="frame" style="padding: 0; margin: 0">'
+    def format_frame_end(self, frame):
+        return '</div>'
 
     def format_extra_data(self, importance, title, value):
         if isinstance(value, str):
