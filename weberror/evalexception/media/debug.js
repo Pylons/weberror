@@ -38,6 +38,29 @@ function _swapImage(anchor) {
     el.src = debug_base + '/media/' + img;
 }
 
+function showSource(anchor) {
+    var location = anchor.getAttribute('location');
+    showSourceCode(location);
+    return false;
+}
+
+function showSourceCode(location) {
+    var url = debug_base + '/source_code?location=' + escape(location);
+    var source = document.getElementById('source_data');
+    source.innerHTML = 'Loading...';
+    switch_display('source_data');
+    callbackXHR(url, null, function (req) {
+                    source.innerHTML = req.responseText;
+                    if (location.indexOf(':') > 0) {
+                        var lineno = location.substring(location.indexOf(':')+1);
+                        lineno = parseInt(lineno) - 10;
+                        if (lineno > 1) {
+                            document.location.hash = '#'+(lineno-10);
+                        }
+                    }
+                });
+}
+
 function submitInput(button, tbid) {
     var input = $('#' + button.getAttribute('input-from')).get(0);
     var output = $('#' + button.getAttribute('output-to')).get(0);
@@ -236,7 +259,7 @@ function callbackXHR(url, data, callback) {
 }
 
 function switch_display(id) {
-    ids = ['extra_data', 'template_data', 'traceback_data'];
+    ids = ['extra_data', 'template_data', 'traceback_data', 'source_data'];
     for (i in ids){
         part = ids[i];
         var el = document.getElementById(part);
