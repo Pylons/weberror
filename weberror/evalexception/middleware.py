@@ -41,6 +41,7 @@ from weberror.exceptions import errormiddleware, formatter, collector
 from tempita import HTMLTemplate
 from webob import Request, Response
 from webob import exc
+from weberror.util import PySourceColor
 
 limit = 200
 
@@ -325,6 +326,29 @@ class EvalException(object):
 
     exec_input = get_debug_info(exec_input)
 
+    def source_code(self, req):
+        location = req.params['location']
+        module_name, lineno = location.split(':', 1)
+        module = sys.modules[module_name]
+        filename = module.__file__
+        if filename.endswith('.pyc'):
+            filename = filename[:-1]
+        f = open(filename, 'rb')
+        source = f.read()
+        f.close()
+        html = (
+            ('<div>Module: <b>%s</b> file: %s</div>'
+             % (module_name, filename))
+            + PySourceColor.str2html(source, form='snip', linenumbers=-1))
+        source_lines = len(source.splitlines())
+        if source_lines < 60:
+            html += '\n<br>'*(60-source_lines)
+        res = Response(content_type='text/html', charset='utf8')
+        res.body = html
+        return res
+
+    source_code.exposed = True
+
     def respond(self, environ, start_response):
         req = Request(environ)
         if req.environ.get('paste.throw_errors'):
@@ -452,11 +476,17 @@ class DebugInfo(object):
 
         template_data = template_data.replace('<h2>', '<h1 class="first">')
         template_data = template_data.replace('</h2>', '</h1>')
+        if hasattr(self.exc_data.exception_type, '__name__'):
+            exc_name = self.exc_data.exception_type.__name__
+        else:
+            exc_name = str(self.exc_data.exception_type)
         page = self.error_template.substitute(
             head_html=self.head_html.substitute(prefix=self.base_path),
             footer_html=self.footer_html.substitute(prefix=self.base_path),
             repost_button=repost_button or '',
             traceback_body=traceback_body,
+            exc_data=self.exc_data,
+            exc_name=exc_name,
             extra_data=extra_data,
             template_data=template_data,
             set_tab=tab,
@@ -475,12 +505,15 @@ class EvalHTMLFormatter(formatter.HTMLFormatter):
     def format_source_line(self, filename, frame):
         line = formatter.HTMLFormatter.format_source_line(
             self, filename, frame)
+        location = '%s:%s' % (frame.modname, frame.lineno)
         return (line +
                 '  <a href="#" class="switch_source" '
                 'tbid="%s" onClick="return showFrame(this)">&nbsp; &nbsp; '
                 '<img src="%s/media/plus.jpg" border=0 width=9 '
-                'height=9> &nbsp; &nbsp;</a>'
-                % (frame.tbid, self.base_path))
+                'height=9> &nbsp; &nbsp;</a> '
+                '<a href="#" class="" location="%s" '
+                'onClick="return showSource(this)">view</a>'
+                % (frame.tbid, self.base_path, location))
 
 
 def make_table(items):

@@ -8,7 +8,7 @@ def error_app(environ, start_response):
 
 def raise_error():
     if 1 == 1:
-        raise Exception()
+        raise Exception('This is an exception')
     else:
         do_stuff()
 
