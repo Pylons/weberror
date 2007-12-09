@@ -375,7 +375,7 @@ def handle_exception(exc_info, error_stream, html=True,
     else:
         return_error = None
     if not reported and error_stream:
-        err_report = formatter.format_text(exc_data, show_hidden_frames=True)
+        err_report = formatter.format_text(exc_data, show_hidden_frames=True)[0]
         err_report += '\n' + '-'*60 + '\n'
         error_stream.write(err_report)
     if extra_data:
