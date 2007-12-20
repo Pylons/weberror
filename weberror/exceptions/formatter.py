@@ -353,7 +353,10 @@ class HTMLFormatter(TextFormatter):
 
 def create_text_node(doc, elem, text):
     if not isinstance(text, basestring):
-        text = repr(text)
+        try:
+            text = repr(text)
+        except:
+            text = 'UNABLE TO GET TEXT REPRESENTATION'
     new_elem = doc.createElement(elem)
     new_elem.appendChild(doc.createTextNode(text))
     return new_elem
