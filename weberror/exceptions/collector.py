@@ -388,9 +388,12 @@ class Bunch(object):
 
     def __repr__(self):
         name = '<%s ' % self.__class__.__name__
-        name += ' '.join(['%s=%r' % (name, str(value)[:30])
-                          for name, value in self.__dict__.items()
-                          if not name.startswith('_')])
+        try:
+            name += ' '.join(['%s=%r' % (name, str(value)[:30])
+                              for name, value in self.__dict__.items()
+                              if not name.startswith('_')])
+        except:
+            name += ' UNABLE TO GET REPRESENTATION'
         return name + '>'
 
 class CollectedException(Bunch):

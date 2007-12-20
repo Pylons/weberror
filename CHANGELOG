@@ -2,3 +2,4 @@ WebError Changelog
 ==================
 
 0.8 (**tip**)
+* Added try/except in case an objects repr throws an exception.
