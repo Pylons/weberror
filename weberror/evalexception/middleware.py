@@ -32,6 +32,8 @@ import itertools
 import time
 import re
 
+from pkg_resources import resource_filename
+
 from paste import urlparser
 from paste import registry
 from paste import request
@@ -187,7 +189,7 @@ class EvalException(object):
     """Handles capturing an exception and turning it into an interactive
     exception explorer"""
     def __init__(self, application, global_conf=None,
-                 error_template_filename=os.path.join(os.path.dirname(__file__), 'error_template.html.tmpl'),
+                 error_template_filename=None,
                  xmlhttp_key=None, media_paths=None, 
                  templating_formatters=None, head_html='', footer_html='', 
                  **params):
@@ -196,6 +198,9 @@ class EvalException(object):
         self.templating_formatters = templating_formatters or []
         self.head_html = HTMLTemplate(head_html)
         self.footer_html = HTMLTemplate(footer_html)
+        if error_template_filename is None:
+            error_template_filename = resource_filename( "weberror.evalexception", 
+                                                         "error_template.html.tmpl" )
         if xmlhttp_key is None:
             if global_conf is None:
                 xmlhttp_key = '_'
@@ -237,19 +242,10 @@ class EvalException(object):
             req.path_info_pop()
             path = self.media_paths[first_part]
         else:
-            path = os.path.join(os.path.dirname(__file__), 'media')
+            path = resource_filename("weberror.evalexception", "media")
         app = urlparser.StaticURLParser(path)
         return app
     media.exposed = True
-
-    def mochikit(self, req):
-        """
-        Static path where MochiKit lives
-        """
-        app = urlparser.StaticURLParser(
-            os.path.join(os.path.dirname(__file__), 'mochikit'))
-        return app
-    mochikit.exposed = True
 
     def summary(self, req):
         """
