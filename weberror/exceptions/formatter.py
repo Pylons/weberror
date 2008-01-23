@@ -417,11 +417,14 @@ class XMLFormatter(AbstractFormatter):
         xml_frame.appendChild(create_text_node(newdoc, 'function', name))
     
     def format_long_source(self, source, long_source, newdoc, xml_frame):
+        source = source.encode('ascii', 'xmlcharrefreplace')
+        long_source = long_source.encode('ascii', 'xmlcharrefreplace')
         xml_frame.appendChild(create_text_node(newdoc, 'operation', source.strip()))
         xml_frame.appendChild(create_text_node(newdoc, 'operation_context', long_source))
 
     def format_exception_info(self, etype, evalue, newdoc):
         exception = newdoc.createElement('exception')
+        evalue = evalue.encode('ascii', 'xmlcharrefreplace')
         exception.appendChild(create_text_node(newdoc, 'type', etype))
         exception.appendChild(create_text_node(newdoc, 'value', evalue))
         return exception
