@@ -54,11 +54,11 @@ class EmailReporter(Reporter):
 
     def assemble_email(self, exc_data):
         short_html_version = self.format_html(
-            exc_data, show_hidden_frames=False)
+            exc_data, show_hidden_frames=False)[0]
         long_html_version = self.format_html(
-            exc_data, show_hidden_frames=True)
+            exc_data, show_hidden_frames=True)[0]
         text_version = self.format_text(
-            exc_data, show_hidden_frames=False)
+            exc_data, show_hidden_frames=False)[0]
         msg = MIMEMultipart()
         msg.set_type('multipart/alternative')
         msg.preamble = msg.epilogue = ''
