@@ -1,5 +1,7 @@
 WebError Changelog
 ==================
 
-0.8 (**tip**)
+0.8a (**tip**)
+* Fixed error in email due to restructuring of project.
+* Added xml formattor output.
 * Added try/except in case an objects repr throws an exception.
