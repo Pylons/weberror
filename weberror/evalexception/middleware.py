@@ -325,7 +325,12 @@ class EvalException(object):
     def source_code(self, req):
         location = req.params['location']
         module_name, lineno = location.split(':', 1)
-        module = sys.modules[module_name]
+        module = sys.modules.get(module_name)
+        if module is None:
+            # Something weird indeed
+            res = Response(content_type='text/html', charset='utf8')
+            res.body = 'The module <code>%s</code> does not have an entry in sys.modules' % module_name
+            return res
         filename = module.__file__
         if filename.endswith('.pyc'):
             filename = filename[:-1]
