@@ -393,13 +393,16 @@ class XMLFormatter(AbstractFormatter):
             if source:
                 self.format_long_source(source, long_source, newdoc, xml_frame)
             
-            variables = newdoc.createElement('variables')
-            xml_frame.appendChild(variables)
-            for name, value in frame.locals.iteritems():
-                variable = newdoc.createElement('variable')
-                variable.appendChild(create_text_node(newdoc, 'name', name))
-                variable.appendChild(create_text_node(newdoc, 'value', value))
-                variables.appendChild(variable)
+            # @@@ TODO: Put in a way to optionally toggle including variables
+            # variables = newdoc.createElement('variables')
+            # xml_frame.appendChild(variables)
+            # for name, value in frame.locals.iteritems():
+            #     if isinstance(value, unicode):
+            #         value = value.encode('ascii', 'xmlcharrefreplace')
+            #     variable = newdoc.createElement('variable')
+            #     variable.appendChild(create_text_node(newdoc, 'name', name))
+            #     variable.appendChild(create_text_node(newdoc, 'value', value))
+            #     variables.appendChild(variable)
         
         etype = exc_data.exception_type
         if not isinstance(etype, basestring):
