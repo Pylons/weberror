@@ -66,9 +66,8 @@ def test_makes_exception():
     res = do_request(bad_app)
     assert '<html' in res
     res = strip_html(str(res))
-    #print res
     assert 'bad_app() takes no arguments (2 given' in res
-    assert 'iterator = application(environ, start_response_wrapper)' in res
+    assert 'application(environ, start_response)' in res
     assert 'wsgiref.validate' in res
     assert 'weberror.exceptions.errormiddleware' in res
 
