@@ -278,7 +278,7 @@ class ExceptionCollector(object):
         data['locals'] = locals
 
         # Output a traceback supplement, if any.
-        if locals.has_key('__traceback_supplement__'):
+        if '__traceback_supplement__' in locals:
             # Use the supplement defined in the function.
             tbs = locals['__traceback_supplement__']
         elif globals.has_key('__traceback_supplement__'):
