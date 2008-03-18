@@ -14,6 +14,8 @@ except ImportError:
 from weberror.exceptions import formatter, collector, reporter
 from paste import wsgilib
 from paste import request
+from paste.util import import_string
+import types
 
 __all__ = ['ErrorMiddleware', 'handle_exception']
 
@@ -87,7 +89,8 @@ class ErrorMiddleware(object):
                  smtp_server=None,
                  error_subject_prefix=None,
                  error_message=None,
-                 xmlhttp_key=None):
+                 xmlhttp_key=None,
+                 reporters=None):
         from paste.util import converters
         self.application = application
         # @@: global_conf should be handled elsewhere in a separate
@@ -120,6 +123,16 @@ class ErrorMiddleware(object):
         if xmlhttp_key is None:
             xmlhttp_key = global_conf.get('xmlhttp_key', '_')
         self.xmlhttp_key = xmlhttp_key
+        reporters = reporters or global_conf.get('error_reporters')
+        if reporters and isinstance(reporters, basestring):
+            reporter_strings = reporters.split()
+            reporters = []
+            for reporter_string in reporter_strings:
+                reporter = import_string.eval_import(reporter_string)
+                if isinstance(reporter, (type, types.ClassType)):
+                    reporter = reporter()
+                reporters.append(reporter)
+        self.reporters = reporters or []
             
     def __call__(self, environ, start_response):
         """
@@ -172,7 +185,8 @@ class ErrorMiddleware(object):
             smtp_server=self.smtp_server,
             error_subject_prefix=self.error_subject_prefix,
             error_message=self.error_message,
-            simple_html_error=simple_html_error)
+            simple_html_error=simple_html_error,
+            reporters=self.reporters)
 
 class CatchingIter(object):
 
@@ -298,6 +312,7 @@ def handle_exception(exc_info, error_stream, html=True,
                      error_subject_prefix='',
                      error_message=None,
                      simple_html_error=False,
+                     reporters=None,
                      ):
     """
     For exception handling outside of a web context
@@ -331,6 +346,14 @@ def handle_exception(exc_info, error_stream, html=True,
             extra_data += rep_err
         else:
             reported = True
+    if reporters:
+        for reporter in reporters:
+            rep_err = send_report(reporter, exc_data, html=html)
+            if rep_err:
+                extra_data += rep_err
+            else:
+                ## FIXME: should this be true?
+                reported = True
     if error_log:
         rep = reporter.LogReporter(
             filename=error_log)

@@ -31,12 +31,14 @@ import pprint
 import itertools
 import time
 import re
+import types
 
 from pkg_resources import resource_filename
 
 from paste import urlparser
 from paste import registry
 from paste import request
+from paste.util import import_string
 
 import evalcontext
 from weberror.exceptions import errormiddleware, formatter, collector
@@ -191,7 +193,8 @@ class EvalException(object):
     def __init__(self, application, global_conf=None,
                  error_template_filename=None,
                  xmlhttp_key=None, media_paths=None, 
-                 templating_formatters=None, head_html='', footer_html='', 
+                 templating_formatters=None, head_html='', footer_html='',
+                 reporters=None,
                  **params):
         self.application = application
         self.debug_infos = {}
@@ -209,6 +212,9 @@ class EvalException(object):
         self.xmlhttp_key = xmlhttp_key
         self.media_paths = media_paths or {}
         self.error_template = HTMLTemplate.from_filename(error_template_filename)
+        if reporters is None:
+            reporters = []
+        self.reporters = reporters
     
     def __call__(self, environ, start_response):
         ## FIXME: print better error message (maybe fall back on
@@ -393,6 +399,10 @@ class EvalException(object):
             environ['wsgi.errors'].write('Debug at: %s\n' % view_uri)
 
             exc_data = collector.collect_exception(*exc_info)
+            exc_data.view_url = view_uri
+            if self.reporters:
+                for reporter in reporters:
+                    reporter.report(exc_data)
             debug_info = DebugInfo(count, exc_info, exc_data, base_path,
                                    environ, view_uri, self.error_template,
                                    self.templating_formatters, self.head_html,
@@ -682,7 +692,7 @@ input_form = HTMLTemplate('''
  ''', name='input_form')
 
 
-def make_eval_exception(app, global_conf, xmlhttp_key=None):
+def make_eval_exception(app, global_conf, xmlhttp_key=None, reporters=None):
     """
     Wraps the application in an interactive debugger.
 
@@ -697,4 +707,14 @@ def make_eval_exception(app, global_conf, xmlhttp_key=None):
     """
     if xmlhttp_key is None:
         xmlhttp_key = global_conf.get('xmlhttp_key', '_')
-    return EvalException(app, xmlhttp_key=xmlhttp_key)
+    if reporters is None:
+        reporters = global_conf.get('error_reporters')
+    if reporters and isinstance(reporters, basestring):
+        reporter_strings = reporters.split()
+        reporters = []
+        for reporter_string in reporter_strings:
+            reporter = import_string.eval_import(reporter_string)
+            if isinstance(reporter, (type, types.ClassType)):
+                reporter = reporter()
+            reporters.append(reporter)
+    return EvalException(app, xmlhttp_key=xmlhttp_key, reporters=reporters)
