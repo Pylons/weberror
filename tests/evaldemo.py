@@ -1,4 +1,4 @@
-from weberror.evalmiddleware import EvalException
+from weberror.evalexception import EvalException
 
 def error_application(environ, start_response):
     a = 1
