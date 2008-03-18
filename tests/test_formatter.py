@@ -115,10 +115,8 @@ def print_diff(s1, s2):
     print '\n'.join(result)
 
 def test_hide_supppressed():
-    """
-    When an error occurs and __traceback_stop__ is true for the
-    erroneous frame, then that setting should be ignored.
-    """
+    # When an error occurs and __traceback_stop__ is true for the
+    # erroneous frame, then that setting should be ignored.
     for f in ['html']: #formats:
         results = []
         for hide_value in (False, 'after'):
