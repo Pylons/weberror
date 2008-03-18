@@ -41,7 +41,7 @@ from paste import request
 from paste.util import import_string
 
 import evalcontext
-from weberror.exceptions import errormiddleware, formatter, collector
+from weberror import errormiddleware, formatter, collector
 from tempita import HTMLTemplate
 from webob import Request, Response
 from webob import exc
@@ -202,8 +202,8 @@ class EvalException(object):
         self.head_html = HTMLTemplate(head_html)
         self.footer_html = HTMLTemplate(footer_html)
         if error_template_filename is None:
-            error_template_filename = resource_filename( "weberror.evalexception", 
-                                                         "error_template.html.tmpl" )
+            error_template_filename = resource_filename( "weberror", 
+                                                         "eval_template.html" )
         if xmlhttp_key is None:
             if global_conf is None:
                 xmlhttp_key = '_'
@@ -248,7 +248,7 @@ class EvalException(object):
             req.path_info_pop()
             path = self.media_paths[first_part]
         else:
-            path = resource_filename("weberror.evalexception", "media")
+            path = resource_filename("weberror", "eval-media")
         app = urlparser.StaticURLParser(path)
         return app
     media.exposed = True

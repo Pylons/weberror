@@ -1,4 +1,4 @@
-from weberror.exceptions import formatter, collector
+from weberror import formatter, collector
 from paste.util.quoting import strip_html
 import sys
 import os
@@ -153,7 +153,7 @@ def test_hide_after():
             result = format(f)
             assert isinstance(result, basestring), (
                 'Bad result: %r' % (result,))
-            print strip_html(result)
+            #print strip_html(result)
             assert 'AABB' in result
             assert 'CCDD' not in result
             assert 'raise_error' in result

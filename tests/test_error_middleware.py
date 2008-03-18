@@ -1,5 +1,5 @@
 from webtest import TestApp
-from weberror.exceptions.errormiddleware import ErrorMiddleware
+from weberror.errormiddleware import ErrorMiddleware
 from wsgiref.validate import validator
 from paste.util.quoting import strip_html
 
@@ -65,11 +65,11 @@ def yielder(args):
 def test_makes_exception():
     res = do_request(bad_app)
     assert '<html' in res
-    res = strip_html(str(res))
+    res = strip_html(str(res.body))
     assert 'bad_app() takes no arguments (2 given' in res
     assert 'application(environ, start_response)' in res
     assert 'wsgiref.validate' in res
-    assert 'weberror.exceptions.errormiddleware' in res
+    assert 'weberror.errormiddleware' in res
 
 def test_start_res():
     res = do_request(start_response_app)

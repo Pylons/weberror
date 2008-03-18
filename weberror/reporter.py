@@ -5,7 +5,7 @@ from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 import smtplib
 import time
-from weberror.exceptions import formatter
+from weberror import formatter
 
 class Reporter(object):
 

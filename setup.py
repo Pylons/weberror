@@ -36,8 +36,7 @@ setup(name='WebError',
       ],
       entry_points="""
       [paste.filter_app_factory]
-      error_catcher = weberror.exceptions.errormiddleware:make_error_middleware
-      cgitb = weberror.cgitb_catcher:make_cgitb_middleware
-      evalerror = weberror.evalexception.middleware:make_eval_exception
+      error_catcher = weberror.errormiddleware:make_error_middleware
+      evalerror = weberror.evalmiddleware:make_eval_exception
       """,
       )
