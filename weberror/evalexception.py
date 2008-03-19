@@ -45,7 +45,6 @@ from weberror import errormiddleware, formatter, collector
 from tempita import HTMLTemplate
 from webob import Request, Response
 from webob import exc
-from weberror.util import PySourceColor
 
 limit = 200
 
@@ -56,7 +55,6 @@ def html_quote(v):
     if v is None:
         return ''
     return cgi.escape(str(v), 1)
-
 
 def preserve_whitespace(v, quote=True):
     """
@@ -346,12 +344,12 @@ class EvalException(object):
         html = (
             ('<div>Module: <b>%s</b> file: %s</div>'
              % (module_name, filename))
-            + PySourceColor.str2html(source, form='snip', linenumbers=-1))
+            + formatter.highlight_python(source, linenos=True))
         source_lines = len(source.splitlines())
         if source_lines < 60:
             html += '\n<br>'*(60-source_lines)
         res = Response(content_type='text/html', charset='utf8')
-        res.body = html
+        res.unicode_body = html
         return res
 
     source_code.exposed = True
@@ -493,6 +491,7 @@ class DebugInfo(object):
             exc_name = str(self.exc_data.exception_type)
         page = self.error_template.substitute(
             head_html=self.head_html.substitute(prefix=self.base_path),
+            pygments_css=formatter.pygments_css,
             footer_html=self.footer_html.substitute(prefix=self.base_path),
             repost_button=repost_button or '',
             traceback_body=traceback_body,
@@ -518,7 +517,7 @@ class EvalHTMLFormatter(formatter.HTMLFormatter):
             self, filename, frame)
         location = '%s:%s' % (frame.modname, frame.lineno)
         return (line +
-                '  <a href="#" class="switch_source" '
+                '  <a href="#" class="show_locals" '
                 'tbid="%s" onClick="return showFrame(this)">&nbsp; &nbsp; '
                 '<img src="%s/media/plus.jpg" border=0 width=9 '
                 'height=9> &nbsp; &nbsp;</a> '

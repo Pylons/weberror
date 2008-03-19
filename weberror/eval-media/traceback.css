@@ -539,6 +539,12 @@ code.source {
 
 a.switch_source {
   color: #090;
+  float: left;
+  text-decoration: none;
+}
+
+a.show_locals {
+  color: #090;
   text-decoration: none;
 }
 

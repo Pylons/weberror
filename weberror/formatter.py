@@ -10,11 +10,22 @@ Formatters for the exception data that comes from ExceptionCollector.
 import cgi
 import re
 import sys
-from weberror.util import PySourceColor
 from xml.dom.minidom import getDOMImplementation
+
+from pygments import highlight as pygments_highlight
+from pygments.lexers import PythonLexer
+from pygments.formatters import HtmlFormatter
 
 def html_quote(s):
     return cgi.escape(str(s), True)
+
+pygments_css = HtmlFormatter().get_style_defs('.highlight')
+
+def highlight_python(code, linenos=False, lineanchors=None):
+    if lineanchors is None and linenos:
+        lineanchors = 'code'
+    return pygments_highlight(code, PythonLexer(),
+                              HtmlFormatter(linenos=linenos, lineanchors=lineanchors))
 
 class AbstractFormatter(object):
 
@@ -279,8 +290,8 @@ class HTMLFormatter(TextFormatter):
     def format_long_source(self, source, long_source):
         q_long_source = str2html(long_source, False, 4, True)
         q_source = str2html(source, True, 0, False)
-        return ('<code style="display: none" class="source" source-type="long"><a class="switch_source" onclick="return switch_source(this, \'long\')" href="#">&lt;&lt;&nbsp; </a>%s</code>'
-                '<code class="source" source-type="short"><a onclick="return switch_source(this, \'short\')" class="switch_source" href="#">&gt;&gt;&nbsp; </a>%s</code>'
+        return ('<div style="display: none" class="source" source-type="long"><a class="switch_source" onclick="return switch_source(this, \'long\')" href="#">&lt;&lt;&nbsp; </a>%s</div>'
+                '<div class="source" source-type="short"><a onclick="return switch_source(this, \'short\')" class="switch_source" href="#">&gt;&gt;&nbsp; </a>%s</div>'
                 % (q_long_source,
                    q_source))
     def format_source(self, source_line):
@@ -319,6 +330,7 @@ class HTMLFormatter(TextFormatter):
         if data_by_importance['extra']:
             extra_data.extend([value for n, value in data_by_importance['extra']])
         text = self.format_combine_lines(lines)
+        ## FIXME: something about this is wrong:
         if self.include_reusable:
             return text, extra_data
         else:
@@ -490,7 +502,7 @@ def _str2html(src, strip=False, indent_subsequent=0,
         src = src.strip()
     orig_src = src
     try:
-        src = PySourceColor.str2html(src, form='snip')
+        src = highlight_python(src)
         src = error_re.sub('', src)
         src = pre_re.sub('', src)
         src = re.sub(r'^[\n\r]{0,1}', '', src)
