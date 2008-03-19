@@ -33,6 +33,7 @@ setup(name='WebError',
         'WebOb',
         'wsgiref',
         'Tempita',
+        'Pygments',
       ],
       entry_points="""
       [paste.filter_app_factory]

@@ -55,7 +55,7 @@ function showSourceCode(location) {
                         var lineno = location.substring(location.indexOf(':')+1);
                         lineno = parseInt(lineno) - 10;
                         if (lineno > 1) {
-                            document.location.hash = '#'+(lineno-10);
+                            document.location.hash = '#code-'+(lineno-10);
                         }
                     }
                 });
@@ -306,6 +306,7 @@ function switch_source(el, hide_type) {
         return false;
     }
     el.style.display = 'none';
+    console.log('found current el', el);
     if (hide_type == 'long') {
         while (el) {
             if (el.getAttribute &&
@@ -314,6 +315,7 @@ function switch_source(el, hide_type) {
             }
             el = el.nextSibling;
         }
+        console.log('found short el', el);
     } else {
         while (el) {
             if (el.getAttribute &&
@@ -322,6 +324,7 @@ function switch_source(el, hide_type) {
             }
             el = el.previousSibling;
         }
+        console.log('found long el', el);
     }
     if (el) {
         el.style.display = '';
