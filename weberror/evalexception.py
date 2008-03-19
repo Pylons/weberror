@@ -717,3 +717,17 @@ def make_eval_exception(app, global_conf, xmlhttp_key=None, reporters=None):
                 reporter = reporter()
             reporters.append(reporter)
     return EvalException(app, xmlhttp_key=xmlhttp_key, reporters=reporters)
+
+def make_general_exception(app, global_conf, interactive=False, **kw):
+    """
+    Creates an error-catching middleware.  If `interactive` is true then
+    it will be the interactive exception catcher, otherwise it will be
+    the static exception catcher.
+    """
+    from paste.deploy.converters import asbool
+    interactive = asbool(interactive)
+    if interactive:
+        return make_eval_exception(app, global_conf, **kw)
+    else:
+        from weberror.errormiddleware import make_error_middleware
+        return make_error_middleware(app, global_conf, **kw)

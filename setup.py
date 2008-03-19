@@ -37,7 +37,8 @@ setup(name='WebError',
       ],
       entry_points="""
       [paste.filter_app_factory]
+      main = weberror.evalexception:make_general_exception
       error_catcher = weberror.errormiddleware:make_error_middleware
-      evalerror = weberror.evalmiddleware:make_eval_exception
+      evalerror = weberror.evalexception:make_eval_exception
       """,
       )
