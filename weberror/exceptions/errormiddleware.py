@@ -1,3 +1,5 @@
+import warnings
+
 def ErrorMiddleware(*args, **kw):
     warnings.warn(
         'weberror.exceptions.errormiddleware.ErrorMiddleware has been moved '
