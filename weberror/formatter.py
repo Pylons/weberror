@@ -389,7 +389,9 @@ class XMLFormatter(AbstractFormatter):
             source = frame.get_source_line()
             long_source = frame.get_source_line(2)
             if source:
-                self.format_long_source(source, long_source, newdoc, xml_frame)
+                self.format_long_source(source.decode(frame.source_encoding),
+                    long_source.decode(frame.source_encoding), newdoc,
+                    xml_frame)
             
             # @@@ TODO: Put in a way to optionally toggle including variables
             # variables = newdoc.createElement('variables')
@@ -407,7 +409,7 @@ class XMLFormatter(AbstractFormatter):
             etype = etype.__name__
         
         top_element.appendChild(self.format_exception_info(
-            etype, exc_data.exception_value, newdoc))
+            etype, exc_data.exception_value, newdoc, frame))
         return newdoc.toprettyxml(), ''
     
     def format_source_line(self, filename, frame, newdoc, xml_frame):
@@ -423,14 +425,14 @@ class XMLFormatter(AbstractFormatter):
         xml_frame.appendChild(create_text_node(newdoc, 'operation', source.strip()))
         xml_frame.appendChild(create_text_node(newdoc, 'operation_context', long_source))
 
-    def format_exception_info(self, etype, evalue, newdoc):
+    def format_exception_info(self, etype, evalue, newdoc, frame):
         exception = newdoc.createElement('exception')
-        evalue = evalue.encode('ascii', 'xmlcharrefreplace')
+        evalue = evalue.decode(frame.source_encoding).encode('ascii', 'xmlcharrefreplace')
         exception.appendChild(create_text_node(newdoc, 'type', etype))
         exception.appendChild(create_text_node(newdoc, 'value', evalue))
         return exception
 
-    
+
 def format_html(exc_data, include_hidden_frames=False, **ops):
     if not include_hidden_frames:
         return HTMLFormatter(**ops).format_collected_data(exc_data)
