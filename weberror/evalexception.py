@@ -42,6 +42,7 @@ from paste.util import import_string
 
 import evalcontext
 from weberror import errormiddleware, formatter, collector
+from weberror.util import escaping
 from tempita import HTMLTemplate
 from webob import Request, Response
 from webob import exc
@@ -484,7 +485,14 @@ class DebugInfo(object):
                 tab = 'template_data'
                 template_data = result
                 break
-
+        
+        # Decode the exception value itself if needed
+        formatted_exc_value = self.exc_value.message
+        if isinstance(formatted_exc_value, str):
+            last_frame = self.exc_data.frames[-1]
+            formatted_exc_value = formatted_exc_value.decode(last_frame.source_encoding)
+        formatted_exc_value = formatted_exc_value.encode('latin1', 'htmlentityreplace')
+        
         template_data = template_data.replace('<h2>', '<h1 class="first">')
         template_data = template_data.replace('</h2>', '</h1>')
         if hasattr(self.exc_data.exception_type, '__name__'):
@@ -498,6 +506,7 @@ class DebugInfo(object):
             traceback_body=traceback_body,
             exc_data=self.exc_data,
             exc_name=exc_name,
+            formatted_exc_value=formatted_exc_value,
             extra_data=extra_data,
             template_data=template_data,
             set_tab=tab,

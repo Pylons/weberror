@@ -10,7 +10,7 @@ Formatters for the exception data that comes from ExceptionCollector.
 import cgi
 import re
 import sys
-from weberror.util import PySourceColor
+from weberror.util import PySourceColor, escaping
 from xml.dom.minidom import getDOMImplementation
 
 def html_quote(s):
@@ -43,6 +43,7 @@ class AbstractFormatter(object):
         lines = []
         frames = self.filter_frames(exc_data.frames)
         for frame in frames:
+            self.frame = frame
             res = self.format_frame_start(frame)
             if res:
                 lines.append(res)
@@ -256,11 +257,13 @@ class TextFormatter(AbstractFormatter):
 class HTMLFormatter(TextFormatter):
 
     def quote(self, s):
-        return html_quote(s)
+        if isinstance(s, str) and hasattr(self, 'frame'):
+            s = s.decode(self.frame.source_encoding)
+        return s.encode('latin1', 'htmlentityreplace')
     def quote_long(self, s):
         return '<pre>%s</pre>' % self.quote(s)
     def emphasize(self, s):
-        return '<b>%s</b>' % s
+        return '<b>%s</b>' % self.quote(s)
     def format_sup_url(self, url):
         return 'URL: <a href="%s">%s</a>' % (url, url)
     def format_combine_lines(self, lines):
@@ -272,13 +275,14 @@ class HTMLFormatter(TextFormatter):
             new_lines.append(line)
         return '\n'.join(new_lines)
     def format_source_line(self, filename, frame):
+        self.frame = frame
         name = self.quote(frame.name or '?')
         return 'Module <span class="module" title="%s">%s</span>:<b>%s</b> in <code>%s</code>' % (
             filename, frame.modname or '?', frame.lineno or '?',
             name)
     def format_long_source(self, source, long_source):
-        q_long_source = str2html(long_source, False, 4, True)
-        q_source = str2html(source, True, 0, False)
+        q_long_source = str2html(long_source, False, 4, True, getattr(self, 'frame', None))
+        q_source = str2html(source, True, 0, False, getattr(self, 'frame', None))
         return ('<code style="display: none" class="source" source-type="long"><a class="switch_source" onclick="return switch_source(this, \'long\')" href="#">&lt;&lt;&nbsp; </a>%s</code>'
                 '<code class="source" source-type="short"><a onclick="return switch_source(this, \'short\')" class="switch_source" href="#">&gt;&gt;&nbsp; </a>%s</code>'
                 % (q_long_source,
@@ -474,7 +478,7 @@ pre_re = re.compile(r'</?pre.*?>')
 error_re = re.compile(r'<h3>ERROR: .*?</h3>')
 
 def str2html(src, strip=False, indent_subsequent=0,
-             highlight_inner=False):
+             highlight_inner=False, frame=None):
     """
     Convert a string to HTML.  Try to be really safe about it,
     returning a quoted version of the string if nothing else works.
@@ -482,12 +486,16 @@ def str2html(src, strip=False, indent_subsequent=0,
     try:
         return _str2html(src, strip=strip,
                          indent_subsequent=indent_subsequent,
-                         highlight_inner=highlight_inner)
+                         highlight_inner=highlight_inner, frame=frame)
     except:
+        if isinstance(src, str) and frame:
+            src = src.decode(frame.source_encoding)
+            src = src.encode('latin1', 'htmlentityreplace')
+            return src
         return html_quote(src)
 
 def _str2html(src, strip=False, indent_subsequent=0,
-              highlight_inner=False):
+              highlight_inner=False, frame=None):
     if strip:
         src = src.strip()
     orig_src = src
@@ -497,8 +505,15 @@ def _str2html(src, strip=False, indent_subsequent=0,
         src = pre_re.sub('', src)
         src = re.sub(r'^[\n\r]{0,1}', '', src)
         src = re.sub(r'[\n\r]{0,1}$', '', src)
+        if isinstance(src, str) and frame:
+            src = src.decode(frame.source_encoding)
+            src = src.encode('latin1', 'htmlentityreplace')
     except:
-        src = html_quote(orig_src)
+        if isinstance(src, str) and frame:
+            src = src.decode(frame.source_encoding)
+            src = src.encode('latin1', 'htmlentityreplace')
+        else:
+            src = html_quote(orig_src)
     lines = src.splitlines()
     if len(lines) == 1:
         return lines[0]
