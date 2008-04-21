@@ -258,7 +258,7 @@ class HTMLFormatter(TextFormatter):
 
     def quote(self, s):
         if isinstance(s, str) and hasattr(self, 'frame'):
-            s = s.decode(self.frame.source_encoding)
+            s = s.decode(self.frame.source_encoding, 'replace')
         return s.encode('latin1', 'htmlentityreplace')
     def quote_long(self, s):
         return '<pre>%s</pre>' % self.quote(s)
@@ -393,9 +393,10 @@ class XMLFormatter(AbstractFormatter):
             source = frame.get_source_line()
             long_source = frame.get_source_line(2)
             if source:
-                self.format_long_source(source.decode(frame.source_encoding),
-                    long_source.decode(frame.source_encoding), newdoc,
-                    xml_frame)
+                self.format_long_source(
+                    source.decode(frame.source_encoding, 'replace'),
+                    long_source.decode(frame.source_encoding, 'replace'),
+                    newdoc, xml_frame)
             
             # @@@ TODO: Put in a way to optionally toggle including variables
             # variables = newdoc.createElement('variables')
@@ -431,7 +432,9 @@ class XMLFormatter(AbstractFormatter):
 
     def format_exception_info(self, etype, evalue, newdoc, frame):
         exception = newdoc.createElement('exception')
-        evalue = evalue.decode(frame.source_encoding).encode('ascii', 'xmlcharrefreplace')
+        evalue = evalue.decode(
+            frame.source_encoding, 'replace').encode('ascii', 
+                                                     'xmlcharrefreplace')
         exception.appendChild(create_text_node(newdoc, 'type', etype))
         exception.appendChild(create_text_node(newdoc, 'value', evalue))
         return exception
@@ -489,7 +492,7 @@ def str2html(src, strip=False, indent_subsequent=0,
                          highlight_inner=highlight_inner, frame=frame)
     except:
         if isinstance(src, str) and frame:
-            src = src.decode(frame.source_encoding)
+            src = src.decode(frame.source_encoding, 'replace')
             src = src.encode('latin1', 'htmlentityreplace')
             return src
         return html_quote(src)
@@ -506,11 +509,11 @@ def _str2html(src, strip=False, indent_subsequent=0,
         src = re.sub(r'^[\n\r]{0,1}', '', src)
         src = re.sub(r'[\n\r]{0,1}$', '', src)
         if isinstance(src, str) and frame:
-            src = src.decode(frame.source_encoding)
+            src = src.decode(frame.source_encoding, 'replace')
             src = src.encode('latin1', 'htmlentityreplace')
     except:
         if isinstance(src, str) and frame:
-            src = src.decode(frame.source_encoding)
+            src = src.decode(frame.source_encoding, 'replace')
             src = src.encode('latin1', 'htmlentityreplace')
         else:
             src = html_quote(orig_src)
