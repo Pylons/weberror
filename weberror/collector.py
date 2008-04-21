@@ -28,7 +28,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 import linecache
-from weberror.util import serial_number_generator
+from weberror.util import source_encoding, serial_number_generator
 
 DEBUG_EXCEPTION_FORMATTER = True
 DEBUG_IDENT_PREFIX = 'E-'
@@ -476,6 +476,8 @@ class ExceptionFrame(Bunch):
     # The id() of the traceback scope, can be used to reference the
     # scope for use elsewhere
     tbid = None
+    # The filename's source code encoding
+    _source_encoding = None
 
     def get_source_line(self, context=0):
         """
@@ -492,6 +494,16 @@ class ExceptionFrame(Bunch):
         for lineno in range(self.lineno-context, self.lineno+context+1):
             lines.append(linecache.getline(self.filename, lineno))
         return ''.join(lines)
+
+    def _get_source_encoding(self):
+        if self._source_encoding:
+            return self._source_encoding
+        lines = [linecache.getline(self.filename, 1),
+                 linecache.getline(self.filename, 2)]
+        self._source_encoding = \
+            source_encoding.parse_encoding(lines) or 'ascii'
+        return self._source_encoding
+    source_encoding = property(_get_source_encoding)
         
 if hasattr(sys, 'tracebacklimit'):
     limit = min(limit, sys.tracebacklimit)
