@@ -487,7 +487,7 @@ class DebugInfo(object):
                 break
         
         # Decode the exception value itself if needed
-        formatted_exc_value = self.exc_value.message
+        formatted_exc_value = self.exc_data.exception_value
         if isinstance(formatted_exc_value, str):
             last_frame = self.exc_data.frames[-1]
             formatted_exc_value = formatted_exc_value.decode(last_frame.source_encoding)
