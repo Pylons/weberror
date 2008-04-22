@@ -1,6 +1,5 @@
 """Parse a Python source code encoding string"""
 import codecs
-import parser
 import re
 
 # Regexp to match python magic encoding line
@@ -27,8 +26,9 @@ def parse_encoding(lines):
         m = PYTHON_MAGIC_COMMENT_re.match(line1)
         if not m:
             try:
+                import parser
                 parser.suite(line1)
-            except SyntaxError:
+            except (ImportError, SyntaxError):
                 # Either it's a real syntax error, in which case the source is
                 # not valid python source, or line2 is a continuation of line1,
                 # in which case we don't want to scan line2 for a magic
