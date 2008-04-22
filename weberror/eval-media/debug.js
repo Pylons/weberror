@@ -45,7 +45,7 @@ function showSource(anchor) {
 }
 
 function showSourceCode(location) {
-    var url = debug_base + '/source_code?location=' + escape(location);
+    var url = debug_base + '/source_code?location=' + encodeURIComponent(location);
     var source = document.getElementById('source_data');
     source.innerHTML = 'Loading...';
     switch_display('source_data');
@@ -247,7 +247,7 @@ function callbackXHR(url, data, callback) {
                 if (newData) {
                     newData += '&';
                 }
-                newData += i + '=' + escape(data[i]);
+                newData += i + '=' + encodeURIComponent(data[i]);
             }
             data = newData;
         }
