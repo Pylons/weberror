@@ -35,9 +35,10 @@ import types
 
 from pkg_resources import resource_filename
 
-from paste import urlparser
+from paste import fileapp
 from paste import registry
 from paste import request
+from paste import urlparser
 from paste.util import import_string
 
 import evalcontext
@@ -374,6 +375,11 @@ class EvalException(object):
         try:
             __traceback_supplement__ = errormiddleware.Supplement, self, environ
             app_iter = self.application(environ, detect_start_response)
+            
+            # Don't create a list from a paste.fileapp object 
+            if isinstance(app_iter, fileapp._FileIter): 
+                return app_iter
+            
             try:
                 return_iter = list(app_iter)
                 return return_iter
