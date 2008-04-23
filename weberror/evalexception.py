@@ -543,7 +543,7 @@ class EvalHTMLFormatter(formatter.HTMLFormatter):
 
 
 def make_table(items):
-    if isinstance(items, dict):
+    if hasattr(items, 'items'):
         items = items.items()
         items.sort()
     return table_template.substitute(
