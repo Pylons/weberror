@@ -695,7 +695,7 @@ input_form = HTMLTemplate('''
  display: none"></div>
 <input type="text" name="input" id="debug_input_{{tbid}}"
  style="width: 100%"
- autocomplete="off" onkeypress="upArrow(this, event)"><br>
+ autocomplete="off"><br>
 <input type="submit" value="Execute" name="submitbutton"
  onclick="return submitInput(this, {{tbid}})"
  id="submit_{{tbid}}"
