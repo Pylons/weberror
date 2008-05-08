@@ -415,7 +415,7 @@ class XMLFormatter(AbstractFormatter):
         
         top_element.appendChild(self.format_exception_info(
             etype, exc_data.exception_value, newdoc, frame))
-        return newdoc.toprettyxml(), ''
+        return newdoc.toxml(), ''
     
     def format_source_line(self, filename, frame, newdoc, xml_frame):
         name = frame.name or '?'
