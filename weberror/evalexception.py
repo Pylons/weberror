@@ -22,6 +22,7 @@ to see the full debuggable traceback.  Also, this URL is printed to
 ``wsgi.errors``, so you can open it up in another browser window.
 
 """
+import httplib
 import sys
 import os
 import cgi
@@ -32,6 +33,7 @@ import itertools
 import time
 import re
 import types
+import urllib
 
 from pkg_resources import resource_filename
 
@@ -242,7 +244,30 @@ class EvalException(object):
         if not getattr(method, 'exposed', False):
             return exc.HTTPForbidden('Access to %r is forbidden' % next_part)
         return method(req)
-
+    
+    def relay(self, req):
+        """Relay a request to a remote machine for JS proxying"""
+        host = req.GET['host']
+        conn = httplib.HTTPConnection(host)
+        headers = req.headers
+        query_str = {}
+        for param, val in req.GET.iteritems():
+            if param in ['host', 'path']: continue
+            query_str[param] = val
+        query_str = urllib.urlencode(query_str)
+        if req.method == 'GET':
+            conn.request("GET", '%s?%s' % (req.GET['path'], query_str), headers=headers)
+        elif req.method == 'POST':
+            conn.request("POST", req.GET['path'], req.body, headers=headers)
+        resp = conn.getresponse()
+        res = Response()
+        for header, value in resp.getheaders():
+            if header.lower() in ['server', 'date']: continue
+            res.headers[header] = value
+        res.body = resp.read()
+        return res
+    relay.exposed=True
+    
     def media(self, req):
         """Static path where images and other files live"""
         first_part = req.path_info_peek()
