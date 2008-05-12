@@ -250,15 +250,21 @@ class EvalException(object):
         host = req.GET['host']
         conn = httplib.HTTPConnection(host)
         headers = req.headers
+        
+        # Re-assemble the query string
         query_str = {}
         for param, val in req.GET.iteritems():
             if param in ['host', 'path']: continue
             query_str[param] = val
         query_str = urllib.urlencode(query_str)
+        
+        # Transport a GET or a POST
         if req.method == 'GET':
             conn.request("GET", '%s?%s' % (req.GET['path'], query_str), headers=headers)
         elif req.method == 'POST':
             conn.request("POST", req.GET['path'], req.body, headers=headers)
+        
+        # Handle the response and pull out the headers to proxy back
         resp = conn.getresponse()
         res = Response()
         for header, value in resp.getheaders():
@@ -267,6 +273,26 @@ class EvalException(object):
         res.body = resp.read()
         return res
     relay.exposed=True
+    
+    def post_traceback(self, req):
+        """Post the long XML traceback to the host and path provided"""
+        debug_info = req.debug_info
+        long_xml_er = formatter.format_xml(debug_info.exc_data, 
+            show_hidden_frames=True, show_extra_data=False)[0]
+        host = req.GET['host']
+        headers = req.headers
+        conn = httplib.HTTPConnection(host)
+        headers = {'Content-Length':len(long_xml_er), 
+                   'Content-Type':'application/xml'}
+        conn.request("POST", req.GET['path'], long_xml_er, headers=headers)
+        resp = conn.getresponse()
+        res = Response()
+        for header, value in resp.getheaders():
+            if header.lower() in ['server', 'date']: continue
+            res.headers[header] = value
+        res.body = resp.read()
+        return res
+    post_traceback = get_debug_info(post_traceback)
     
     def media(self, req):
         """Static path where images and other files live"""
