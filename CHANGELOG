@@ -1,6 +1,11 @@
 WebError Changelog
 ==================
 
+0.8 (**tip**)
+* Updated JS to use jQuery where applicable. Updated jQuery lib and added
+  jQuery hotkeys plugin.
+* Refactored to a flatter layout.
+
 0.8a (02/27/2008)
 * Fixed error in email due to restructuring of project.
 * Added xml formattor output.
