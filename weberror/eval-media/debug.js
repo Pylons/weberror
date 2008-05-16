@@ -23,7 +23,7 @@ function showFrame(anchor) {
                     el.innerHTML = data.responseText;
                     anchor.expandedElement = el;
                     _swapImage(anchor);
-                    $('#debug_input_'+tbid).get(0).focus();
+                    $('#debug_input_'+tbid).focus().keydown(upArrow);
                 });
     return false;
 }
@@ -103,6 +103,42 @@ function clearError() {
     $('#error-area').hide();
 }
 
+function upArrow(event) {
+    var key = event.charCode ? event.charCode : event.keyCode;
+    if (key != 38 && key != 40 && key != 63232
+        && key != 63233) {
+        // not an up- or down-arrow
+        return true;
+    }
+    var dir = ((key == 38) || (key == 63232)) ? 1 : -1;
+    var history = this.form.history;
+    if (! history) {
+        history = this.form.history = [];
+    }
+    var pos = this.historyPosition || 0;
+    if (! pos && dir == -1) {
+        return true;
+    }
+    if (! pos && this.value) {
+        history.push(this.value);
+        pos = 1;
+    }
+    pos += dir;
+    if (history.length-pos < 0) {
+        pos = 1;
+    }
+    if (history.length-pos > history.length-1) {
+        this.value = '';
+        return true;
+    }
+    this.historyPosition = pos;
+    var line = history[history.length-pos];
+    if (! line) {
+        return true;
+    }
+    this.value = line;
+}
+
 function expandInput(button) {
     var input = button.form.elements.input;
     stdops = {
@@ -115,8 +151,8 @@ function expandInput(button) {
         var text = 'Contract';
     } else {
         stdops['type'] = 'text';
-        stdops['onkeypress'] = 'upArrow(this)';
         var newEl = createElement('input', stdops);
+        $(newEl).keydown(upArrow);
         var text = 'Expand';
     }
     newEl.value = input.value;
@@ -125,40 +161,6 @@ function expandInput(button) {
     newEl.focus();
     button.value = text;
     return false;
-}
-
-function upArrow(input, event) {
-    if (window.event) {
-        event = window.event;
-    }
-    if (event.keyCode != 38 && event.keyCode != 40) {
-        // not an up- or down-arrow
-        return true;
-    }
-    var dir = event.keyCode == 38 ? 1 : -1;
-    var history = input.form.history;
-    if (! history) {
-        history = input.form.history = [];
-    }
-    var pos = input.historyPosition || 0;
-    if (! pos && dir == -1) {
-        return true;
-    }
-    if (! pos && input.value) {
-        history.push(input.value);
-        pos = 1;
-    }
-    pos += dir;
-    if (history.length-pos < 0) {
-        pos = 1;
-    }
-    if (history.length-pos > history.length-1) {
-        input.value = '';
-        return true;
-    }
-    input.historyPosition = pos;
-    var line = history[history.length-pos];
-    input.value = line;
 }
 
 function expandLong(anchor) {

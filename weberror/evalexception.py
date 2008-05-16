@@ -22,6 +22,7 @@ to see the full debuggable traceback.  Also, this URL is printed to
 ``wsgi.errors``, so you can open it up in another browser window.
 
 """
+import httplib
 import sys
 import os
 import cgi
@@ -32,6 +33,7 @@ import itertools
 import time
 import re
 import types
+import urllib
 
 from pkg_resources import resource_filename
 
@@ -242,7 +244,56 @@ class EvalException(object):
         if not getattr(method, 'exposed', False):
             return exc.HTTPForbidden('Access to %r is forbidden' % next_part)
         return method(req)
-
+    
+    def relay(self, req):
+        """Relay a request to a remote machine for JS proxying"""
+        host = req.GET['host']
+        conn = httplib.HTTPConnection(host)
+        headers = req.headers
+        
+        # Re-assemble the query string
+        query_str = {}
+        for param, val in req.GET.iteritems():
+            if param in ['host', 'path']: continue
+            query_str[param] = val
+        query_str = urllib.urlencode(query_str)
+        
+        # Transport a GET or a POST
+        if req.method == 'GET':
+            conn.request("GET", '%s?%s' % (req.GET['path'], query_str), headers=headers)
+        elif req.method == 'POST':
+            conn.request("POST", req.GET['path'], req.body, headers=headers)
+        
+        # Handle the response and pull out the headers to proxy back
+        resp = conn.getresponse()
+        res = Response()
+        for header, value in resp.getheaders():
+            if header.lower() in ['server', 'date']: continue
+            res.headers[header] = value
+        res.body = resp.read()
+        return res
+    relay.exposed=True
+    
+    def post_traceback(self, req):
+        """Post the long XML traceback to the host and path provided"""
+        debug_info = req.debug_info
+        long_xml_er = formatter.format_xml(debug_info.exc_data, 
+            show_hidden_frames=True, show_extra_data=False)[0]
+        host = req.GET['host']
+        headers = req.headers
+        conn = httplib.HTTPConnection(host)
+        headers = {'Content-Length':len(long_xml_er), 
+                   'Content-Type':'application/xml'}
+        conn.request("POST", req.GET['path'], long_xml_er, headers=headers)
+        resp = conn.getresponse()
+        res = Response()
+        for header, value in resp.getheaders():
+            if header.lower() in ['server', 'date']: continue
+            res.headers[header] = value
+        res.body = resp.read()
+        return res
+    post_traceback = get_debug_info(post_traceback)
+    
     def media(self, req):
         """Static path where images and other files live"""
         first_part = req.path_info_peek()
@@ -695,7 +746,7 @@ input_form = HTMLTemplate('''
  display: none"></div>
 <input type="text" name="input" id="debug_input_{{tbid}}"
  style="width: 100%"
- autocomplete="off" onkeypress="upArrow(this, event)"><br>
+ autocomplete="off"><br>
 <input type="submit" value="Execute" name="submitbutton"
  onclick="return submitInput(this, {{tbid}})"
  id="submit_{{tbid}}"
