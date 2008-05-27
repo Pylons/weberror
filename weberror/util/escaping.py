@@ -1,7 +1,8 @@
 # filters.py
-# Copyright (C) 2006, 2007, 2008 Geoffrey T. Dairiki <dairiki@dairiki.org> and Michael Bayer <mike_mp@zzzcomputing.com>
+# Copyright (C) 2006, 2007, 2008 Geoffrey T. Dairiki <dairiki@dairiki.org> 
+# and Michael Bayer <mike_mp@zzzcomputing.com> and Ben Bangert <ben@groovie.org>
 #
-# This module is part of Mako and is released under
+# This module heavily based on the one from Mako and is released under
 # the MIT License: http://www.opensource.org/licenses/mit-license.php
 
 
@@ -166,3 +167,66 @@ DEFAULT_ESCAPES = {
     'str':'str',
     'n':'n'
 }
+
+# regexps used by _translateCdata(),
+# made global to compile once.
+# see http://www.xml.com/axml/target.html#dt-character
+ILLEGAL_LOW_CHARS = '[\x01-\x08\x0B-\x0C\x0E-\x1F]'
+ILLEGAL_HIGH_CHARS = '\xEF\xBF[\xBE\xBF]'
+# Note: Prolly fuzzy on this, but it looks as if characters from the
+# surrogate block are allowed if in scalar form, which is encoded in UTF8 the
+# same was as in surrogate block form
+XML_ILLEGAL_CHAR_PATTERN = re.compile(
+    '%s|%s' % (ILLEGAL_LOW_CHARS, ILLEGAL_HIGH_CHARS))
+# the characters that we will want to turn into entrefs
+# We must do so for &, <,  and > following ]].
+# The xml parser has more leeway, but we're not the parser.
+# http://www.xml.com/axml/target.html#dt-chardata
+# characters that we must *always* turn to entrefs:
+g_cdataCharPatternReq = re.compile('[&<]|]]>')
+g_charToEntityReq = {
+    '&': '&amp;',
+    '<': '&lt;',
+    ']]>': ']]&gt;',
+    }
+# characters that we must turn to entrefs in attr values:
+g_cdataCharPattern = re.compile('[&<>"\']|]]>')
+g_charToEntity = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&apos;',
+    ']]>': ']]&gt;',
+    }
+
+def removeIllegalChars(characters):
+    if XML_ILLEGAL_CHAR_PATTERN.search(new_string):
+        characters = XML_ILLEGAL_CHAR_PATTERN.subn(
+            lambda m: '&#%i;' % ord(m.group()),
+            characters)[0]
+    return characters
+
+def translateCdata(characters, allEntRefs = None):
+    """Translate characters into a legal format."""
+    if not characters:
+        return ''
+    if allEntRefs: # translate all chars to entrefs; for attr value
+        if g_cdataCharPattern.search(characters):
+            new_string = g_cdataCharPattern.subn(
+                lambda m, d=g_charToEntity: d[m.group()],
+                characters)[0]
+        else:
+            new_string = characters
+    else: # translate only required chars to entrefs
+        if g_cdataCharPatternReq.search(characters):
+            new_string = g_cdataCharPatternReq.subn(
+                lambda m, d=g_charToEntityReq: d[m.group()],
+                characters)[0]
+        else:
+            new_string = characters
+    if XML_ILLEGAL_CHAR_PATTERN.search(new_string):
+        new_string = XML_ILLEGAL_CHAR_PATTERN.subn(
+            lambda m: '&#%i;' % ord(m.group()),
+            new_string)[0]
+    return new_string
