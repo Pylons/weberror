@@ -201,7 +201,7 @@ g_charToEntity = {
     }
 
 def removeIllegalChars(characters):
-    if XML_ILLEGAL_CHAR_PATTERN.search(new_string):
+    if XML_ILLEGAL_CHAR_PATTERN.search(characters):
         characters = XML_ILLEGAL_CHAR_PATTERN.subn(
             lambda m: '&#%i;' % ord(m.group()),
             characters)[0]
