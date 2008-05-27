@@ -356,7 +356,7 @@ class HTMLFormatter(TextFormatter):
 def create_text_node(doc, elem, text):
     if not isinstance(text, basestring):
         try:
-            text = repr(text)
+            text = escaping.removeIllegalChars(repr(text))
         except:
             text = 'UNABLE TO GET TEXT REPRESENTATION'
     new_elem = doc.createElement(elem)
@@ -421,7 +421,7 @@ class XMLFormatter(AbstractFormatter):
         name = frame.name or '?'
         xml_frame.appendChild(create_text_node(newdoc, 'module', frame.modname or '?'))
         xml_frame.appendChild(create_text_node(newdoc, 'filename', filename))
-        xml_frame.appendChild(create_text_node(newdoc, 'line', frame.lineno or '?'))
+        xml_frame.appendChild(create_text_node(newdoc, 'line', str(frame.lineno) or '?'))
         xml_frame.appendChild(create_text_node(newdoc, 'function', name))
     
     def format_long_source(self, source, long_source, newdoc, xml_frame):
