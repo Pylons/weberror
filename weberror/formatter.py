@@ -184,9 +184,11 @@ class AbstractFormatter(object):
 class TextFormatter(AbstractFormatter):
 
     def quote(self, s):
-        return s
+        if isinstance(s, str) and hasattr(self, 'frame'):
+            s = s.decode(self.frame.source_encoding, 'replace')
+        return s.encode('latin1', 'htmlentityreplace')
     def quote_long(self, s):
-        return s
+        return self.quote(s)
     def emphasize(self, s):
         return s
     def format_sup_object(self, obj):
@@ -260,10 +262,11 @@ class HTMLFormatter(TextFormatter):
         if isinstance(s, str) and hasattr(self, 'frame'):
             s = s.decode(self.frame.source_encoding, 'replace')
         return s.encode('latin1', 'htmlentityreplace')
+    
     def quote_long(self, s):
         return '<pre>%s</pre>' % self.quote(s)
     def emphasize(self, s):
-        return '<b>%s</b>' % self.quote(s)
+        return '<b>%s</b>' % s
     def format_sup_url(self, url):
         return 'URL: <a href="%s">%s</a>' % (url, url)
     def format_combine_lines(self, lines):
