@@ -296,7 +296,7 @@ class HTMLFormatter(TextFormatter):
         return '<pre>%s</pre>' % self.quote(info)
     def format_frame_start(self, frame):
         ## FIXME: make it zebra?
-        return '<div class="frame" style="padding: 0; margin: 0">'
+        return '<div class="frame">'
     def format_frame_end(self, frame):
         return '</div>'
 
