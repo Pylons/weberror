@@ -33,7 +33,10 @@ setup(name='WebError',
         'WebOb',
         'wsgiref',
         'Tempita',
+        'simplejson',
       ],
+      test_suite='nose.collector',
+      tests_require=['nose', 'webtest', 'Paste'],
       entry_points="""
       [paste.filter_app_factory]
       error_catcher = weberror.errormiddleware:make_error_middleware
