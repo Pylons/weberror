@@ -198,8 +198,9 @@ class EvalException(object):
                  error_template_filename=None,
                  xmlhttp_key=None, media_paths=None, 
                  templating_formatters=None, head_html='', footer_html='',
-                 reporters=None,
+                 reporters=None, libraries=None,
                  **params):
+        self.libraries = libraries or []
         self.application = application
         self.debug_infos = {}
         self.templating_formatters = templating_formatters or []
@@ -278,7 +279,8 @@ class EvalException(object):
         """Post the long XML traceback to the host and path provided"""
         debug_info = req.debug_info
         long_xml_er = formatter.format_xml(debug_info.exc_data, 
-            show_hidden_frames=True, show_extra_data=False)[0]
+            show_hidden_frames=True, show_extra_data=False, 
+            libraries=self.libraries)[0]
         host = req.GET['host']
         headers = req.headers
         conn = httplib.HTTPConnection(host)
@@ -464,7 +466,7 @@ class EvalException(object):
             debug_info = DebugInfo(count, exc_info, exc_data, base_path,
                                    environ, view_uri, self.error_template,
                                    self.templating_formatters, self.head_html,
-                                   self.footer_html)
+                                   self.footer_html, self.libraries)
             assert count not in self.debug_infos
             self.debug_infos[count] = debug_info
 
@@ -484,7 +486,7 @@ class DebugInfo(object):
 
     def __init__(self, counter, exc_info, exc_data, base_path,
                  environ, view_uri, error_template, templating_formatters, 
-                 head_html, footer_html):
+                 head_html, footer_html, libraries):
         self.counter = counter
         self.exc_data = exc_data
         self.base_path = base_path
@@ -495,6 +497,7 @@ class DebugInfo(object):
         self.templating_formatters = templating_formatters
         self.head_html = head_html
         self.footer_html = footer_html
+        self.libraries = libraries
         self.exc_type, self.exc_value, self.tb = exc_info
         __exception_formatter__ = 1
         self.frames = []
@@ -531,7 +534,8 @@ class DebugInfo(object):
         return self.content()
 
     def content(self):
-        traceback_body, extra_data = format_eval_html(self.exc_data, self.base_path, self.counter)
+        traceback_body, extra_data = format_eval_html(self.exc_data, 
+            self.base_path, self.counter, self.libraries)
         repost_button = make_repost_button(self.environ)
         template_data = '<p>No Template information available.</p>'
         tab = 'traceback_data'
@@ -642,7 +646,7 @@ def pprint_format(value, safe=False):
             raise
     return out.getvalue()
 
-def format_eval_html(exc_data, base_path, counter):
+def format_eval_html(exc_data, base_path, counter, libraries):
     short_formatter = EvalHTMLFormatter(
         base_path=base_path,
         counter=counter,
@@ -659,9 +663,9 @@ def format_eval_html(exc_data, base_path, counter):
     long_text_er = formatter.format_text(exc_data, show_hidden_frames=True,
                                          show_extra_data=False)[0]
     long_xml_er = formatter.format_xml(exc_data, show_hidden_frames=True, 
-                                  show_extra_data=False)[0]
+                                  show_extra_data=False, libraries=libraries)[0]
     short_xml_er = formatter.format_xml(exc_data, show_hidden_frames=False, 
-                                  show_extra_data=False)[0]
+                                  show_extra_data=False, libraries=libraries)[0]
     
     if short_formatter.filter_frames(exc_data.frames) != \
         long_formatter.filter_frames(exc_data.frames):

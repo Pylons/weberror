@@ -1,7 +1,12 @@
 WebError Changelog
 ==================
 
-0.8 (**tip**)
+0.9 (**tip**)
+* Added dependency library listings for XML output.
+
+0.8 (06/12/2008)
+* Added fairly basic pdbcapture system.
+* Fixed errors in unicode handling and exception displaying.
 * Updated JS to use jQuery where applicable. Updated jQuery lib and added
   jQuery hotkeys plugin.
 * Refactored to a flatter layout.
