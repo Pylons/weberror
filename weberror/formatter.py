@@ -13,6 +13,11 @@ import sys
 from weberror.util import PySourceColor, escaping
 from xml.dom.minidom import getDOMImplementation
 
+try:
+    import pkg_resources
+except ImportError:
+    pkg_resources = None
+
 def html_quote(s):
     return cgi.escape(str(s), True)
 
@@ -20,14 +25,13 @@ class AbstractFormatter(object):
 
     general_data_order = ['object', 'source_url']
 
-    def __init__(self, show_hidden_frames=False,
-                 include_reusable=True,
-                 show_extra_data=True,
-                 trim_source_paths=()):
+    def __init__(self, show_hidden_frames=False, include_reusable=True,
+                 show_extra_data=True, trim_source_paths=(), **kwargs):
         self.show_hidden_frames = show_hidden_frames
         self.trim_source_paths = trim_source_paths
         self.include_reusable = include_reusable
         self.show_extra_data = show_extra_data
+        self.extra_kwargs = kwargs
 
     def format_collected_data(self, exc_data):
         general_data = {}
@@ -356,6 +360,37 @@ class HTMLFormatter(TextFormatter):
         table.append('</table>')
         return '\n'.join(table)
 
+def get_dependencies(circ_check, lib, working_set):
+    libs = {}
+    for proj in working_set.by_key[lib].requires():
+        if proj.key in circ_check:
+            continue
+        circ_check[proj.key] = True
+        libs[proj.key] = working_set.by_key[proj.key].version
+        libs.update(get_dependencies(circ_check, proj.key, working_set))
+    return libs
+
+def get_libraries(libs=None):
+    """Return a dict of the desired libraries and their version if
+    active in the environment"""
+    if pkg_resources and libs:
+        libraries = {}
+        working_set = pkg_resources.working_set
+        for lib in libs:
+            # Put libs we've either check dependencies on, or are in progress
+            # of checking here, to avoid circular references going forever
+            circ_check = {}
+            if lib in working_set.by_key:
+                if lib in circ_check:
+                    continue
+                circ_check[lib] = True
+                libraries[lib] = working_set.by_key[lib].version
+                libraries.update(
+                    get_dependencies(circ_check, lib, working_set))
+        return libraries
+    else:
+        return {}
+    
 def create_text_node(doc, elem, text):
     if not isinstance(text, basestring):
         try:
@@ -375,7 +410,20 @@ class XMLFormatter(AbstractFormatter):
         sysinfo = newdoc.createElement('sysinfo')
         language = create_text_node(newdoc, 'language', 'Python')
         language.attributes['version'] = sys.version.split(' ')[0]
+        language.attributes['platform'] = sys.platform
         sysinfo.appendChild(language)
+        
+        # Pull out pkg_resource libraries for set libraries
+        libs = get_libraries(self.extra_kwargs.get('libraries'))
+        if libs:
+            libraries = newdoc.createElement('libraries')
+            for k, v in libs.iteritems():
+                lib = newdoc.createElement('library')
+                lib.attributes['version'] = v
+                lib.attributes['name'] = k
+                libraries.appendChild(lib)
+            sysinfo.appendChild(libraries)
+        
         top_element.appendChild(sysinfo)
         
         frames = self.filter_frames(exc_data.frames)
