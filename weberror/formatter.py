@@ -410,6 +410,7 @@ class XMLFormatter(AbstractFormatter):
         sysinfo = newdoc.createElement('sysinfo')
         language = create_text_node(newdoc, 'language', 'Python')
         language.attributes['version'] = sys.version.split(' ')[0]
+        language.attributes['full_version'] = sys.version
         language.attributes['platform'] = sys.platform
         sysinfo.appendChild(language)
         
