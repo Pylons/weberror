@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.8a'
+version = '0.9'
 
 setup(name='WebError',
       version=version,
@@ -34,7 +34,10 @@ setup(name='WebError',
         'wsgiref',
         'Tempita',
         'Pygments',
+        'simplejson',
       ],
+      test_suite='nose.collector',
+      tests_require=['nose', 'webtest', 'Paste'],
       entry_points="""
       [paste.filter_app_factory]
       main = weberror.evalexception:make_general_exception

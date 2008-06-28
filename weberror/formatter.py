@@ -10,12 +10,19 @@ Formatters for the exception data that comes from ExceptionCollector.
 import cgi
 import re
 import sys
+from weberror.util import escaping
 from xml.dom.minidom import getDOMImplementation
-
 from pygments import highlight as pygments_highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import HtmlFormatter
 
+=======
+try:
+    import pkg_resources
+except ImportError:
+    pkg_resources = None
+
+>>>>>>> /tmp/formatter.py~other.sXSt40
 def html_quote(s):
     return cgi.escape(str(s), True)
 
@@ -31,14 +38,13 @@ class AbstractFormatter(object):
 
     general_data_order = ['object', 'source_url']
 
-    def __init__(self, show_hidden_frames=False,
-                 include_reusable=True,
-                 show_extra_data=True,
-                 trim_source_paths=()):
+    def __init__(self, show_hidden_frames=False, include_reusable=True,
+                 show_extra_data=True, trim_source_paths=(), **kwargs):
         self.show_hidden_frames = show_hidden_frames
         self.trim_source_paths = trim_source_paths
         self.include_reusable = include_reusable
         self.show_extra_data = show_extra_data
+        self.extra_kwargs = kwargs
 
     def format_collected_data(self, exc_data):
         general_data = {}
@@ -54,6 +60,7 @@ class AbstractFormatter(object):
         lines = []
         frames = self.filter_frames(exc_data.frames)
         for frame in frames:
+            self.frame = frame
             res = self.format_frame_start(frame)
             if res:
                 lines.append(res)
@@ -194,9 +201,11 @@ class AbstractFormatter(object):
 class TextFormatter(AbstractFormatter):
 
     def quote(self, s):
-        return s
+        if isinstance(s, str) and hasattr(self, 'frame'):
+            s = s.decode(self.frame.source_encoding, 'replace')
+        return s.encode('latin1', 'htmlentityreplace')
     def quote_long(self, s):
-        return s
+        return self.quote(s)
     def emphasize(self, s):
         return s
     def format_sup_object(self, obj):
@@ -267,7 +276,10 @@ class TextFormatter(AbstractFormatter):
 class HTMLFormatter(TextFormatter):
 
     def quote(self, s):
-        return html_quote(s)
+        if isinstance(s, str) and hasattr(self, 'frame'):
+            s = s.decode(self.frame.source_encoding, 'replace')
+        return s.encode('latin1', 'htmlentityreplace')
+    
     def quote_long(self, s):
         return '<pre>%s</pre>' % self.quote(s)
     def emphasize(self, s):
@@ -283,15 +295,23 @@ class HTMLFormatter(TextFormatter):
             new_lines.append(line)
         return '\n'.join(new_lines)
     def format_source_line(self, filename, frame):
+        self.frame = frame
         name = self.quote(frame.name or '?')
         return 'Module <span class="module" title="%s">%s</span>:<b>%s</b> in <code>%s</code>' % (
             filename, frame.modname or '?', frame.lineno or '?',
             name)
     def format_long_source(self, source, long_source):
+<<<<<<< /home/ianb/src/weberror/weberror/formatter.py
         q_long_source = str2html(long_source, False, 4, True)
         q_source = str2html(source, True, 0, False)
         return ('<div style="display: none" class="source" source-type="long"><a class="switch_source" onclick="return switch_source(this, \'long\')" href="#">&lt;&lt;&nbsp; </a>%s</div>'
                 '<div class="source" source-type="short"><a onclick="return switch_source(this, \'short\')" class="switch_source" href="#">&gt;&gt;&nbsp; </a>%s</div>'
+=======
+        q_long_source = str2html(long_source, False, 4, True, getattr(self, 'frame', None))
+        q_source = str2html(source, True, 0, False, getattr(self, 'frame', None))
+        return ('<code style="display: none" class="source" source-type="long"><a class="switch_source" onclick="return switch_source(this, \'long\')" href="#">&lt;&lt;&nbsp; </a>%s</code>'
+                '<code class="source" source-type="short"><a onclick="return switch_source(this, \'short\')" class="switch_source" href="#">&gt;&gt;&nbsp; </a>%s</code>'
+>>>>>>> /tmp/formatter.py~other.sXSt40
                 % (q_long_source,
                    q_source))
     def format_source(self, source_line):
@@ -300,7 +320,7 @@ class HTMLFormatter(TextFormatter):
         return '<pre>%s</pre>' % self.quote(info)
     def format_frame_start(self, frame):
         ## FIXME: make it zebra?
-        return '<div class="frame" style="padding: 0; margin: 0">'
+        return '<div class="frame">'
     def format_frame_end(self, frame):
         return '</div>'
 
@@ -361,10 +381,41 @@ class HTMLFormatter(TextFormatter):
         table.append('</table>')
         return '\n'.join(table)
 
+def get_dependencies(circ_check, lib, working_set):
+    libs = {}
+    for proj in working_set.by_key[lib].requires():
+        if proj.key in circ_check:
+            continue
+        circ_check[proj.key] = True
+        libs[proj.key] = working_set.by_key[proj.key].version
+        libs.update(get_dependencies(circ_check, proj.key, working_set))
+    return libs
+
+def get_libraries(libs=None):
+    """Return a dict of the desired libraries and their version if
+    active in the environment"""
+    if pkg_resources and libs:
+        libraries = {}
+        working_set = pkg_resources.working_set
+        for lib in libs:
+            # Put libs we've either check dependencies on, or are in progress
+            # of checking here, to avoid circular references going forever
+            circ_check = {}
+            if lib in working_set.by_key:
+                if lib in circ_check:
+                    continue
+                circ_check[lib] = True
+                libraries[lib] = working_set.by_key[lib].version
+                libraries.update(
+                    get_dependencies(circ_check, lib, working_set))
+        return libraries
+    else:
+        return {}
+    
 def create_text_node(doc, elem, text):
     if not isinstance(text, basestring):
         try:
-            text = repr(text)
+            text = escaping.removeIllegalChars(repr(text))
         except:
             text = 'UNABLE TO GET TEXT REPRESENTATION'
     new_elem = doc.createElement(elem)
@@ -380,7 +431,21 @@ class XMLFormatter(AbstractFormatter):
         sysinfo = newdoc.createElement('sysinfo')
         language = create_text_node(newdoc, 'language', 'Python')
         language.attributes['version'] = sys.version.split(' ')[0]
+        language.attributes['full_version'] = sys.version
+        language.attributes['platform'] = sys.platform
         sysinfo.appendChild(language)
+        
+        # Pull out pkg_resource libraries for set libraries
+        libs = get_libraries(self.extra_kwargs.get('libraries'))
+        if libs:
+            libraries = newdoc.createElement('libraries')
+            for k, v in libs.iteritems():
+                lib = newdoc.createElement('library')
+                lib.attributes['version'] = v
+                lib.attributes['name'] = k
+                libraries.appendChild(lib)
+            sysinfo.appendChild(libraries)
+        
         top_element.appendChild(sysinfo)
         
         frames = self.filter_frames(exc_data.frames)
@@ -401,7 +466,10 @@ class XMLFormatter(AbstractFormatter):
             source = frame.get_source_line()
             long_source = frame.get_source_line(2)
             if source:
-                self.format_long_source(source, long_source, newdoc, xml_frame)
+                self.format_long_source(
+                    source.decode(frame.source_encoding, 'replace'),
+                    long_source.decode(frame.source_encoding, 'replace'),
+                    newdoc, xml_frame)
             
             # @@@ TODO: Put in a way to optionally toggle including variables
             # variables = newdoc.createElement('variables')
@@ -419,14 +487,14 @@ class XMLFormatter(AbstractFormatter):
             etype = etype.__name__
         
         top_element.appendChild(self.format_exception_info(
-            etype, exc_data.exception_value, newdoc))
-        return newdoc.toprettyxml(), ''
+            etype, exc_data.exception_value, newdoc, frame))
+        return newdoc.toxml(), ''
     
     def format_source_line(self, filename, frame, newdoc, xml_frame):
         name = frame.name or '?'
         xml_frame.appendChild(create_text_node(newdoc, 'module', frame.modname or '?'))
         xml_frame.appendChild(create_text_node(newdoc, 'filename', filename))
-        xml_frame.appendChild(create_text_node(newdoc, 'line', frame.lineno or '?'))
+        xml_frame.appendChild(create_text_node(newdoc, 'line', str(frame.lineno) or '?'))
         xml_frame.appendChild(create_text_node(newdoc, 'function', name))
     
     def format_long_source(self, source, long_source, newdoc, xml_frame):
@@ -435,14 +503,16 @@ class XMLFormatter(AbstractFormatter):
         xml_frame.appendChild(create_text_node(newdoc, 'operation', source.strip()))
         xml_frame.appendChild(create_text_node(newdoc, 'operation_context', long_source))
 
-    def format_exception_info(self, etype, evalue, newdoc):
+    def format_exception_info(self, etype, evalue, newdoc, frame):
         exception = newdoc.createElement('exception')
-        evalue = evalue.encode('ascii', 'xmlcharrefreplace')
+        evalue = evalue.decode(
+            frame.source_encoding, 'replace').encode('ascii', 
+                                                     'xmlcharrefreplace')
         exception.appendChild(create_text_node(newdoc, 'type', etype))
         exception.appendChild(create_text_node(newdoc, 'value', evalue))
         return exception
 
-    
+
 def format_html(exc_data, include_hidden_frames=False, **ops):
     if not include_hidden_frames:
         return HTMLFormatter(**ops).format_collected_data(exc_data)
@@ -484,7 +554,7 @@ pre_re = re.compile(r'</?pre.*?>')
 error_re = re.compile(r'<h3>ERROR: .*?</h3>')
 
 def str2html(src, strip=False, indent_subsequent=0,
-             highlight_inner=False):
+             highlight_inner=False, frame=None):
     """
     Convert a string to HTML.  Try to be really safe about it,
     returning a quoted version of the string if nothing else works.
@@ -492,12 +562,16 @@ def str2html(src, strip=False, indent_subsequent=0,
     try:
         return _str2html(src, strip=strip,
                          indent_subsequent=indent_subsequent,
-                         highlight_inner=highlight_inner)
+                         highlight_inner=highlight_inner, frame=frame)
     except:
+        if isinstance(src, str) and frame:
+            src = src.decode(frame.source_encoding, 'replace')
+            src = src.encode('latin1', 'htmlentityreplace')
+            return src
         return html_quote(src)
 
 def _str2html(src, strip=False, indent_subsequent=0,
-              highlight_inner=False):
+              highlight_inner=False, frame=None):
     if strip:
         src = src.strip()
     orig_src = src
@@ -507,8 +581,15 @@ def _str2html(src, strip=False, indent_subsequent=0,
         src = pre_re.sub('', src)
         src = re.sub(r'^[\n\r]{0,1}', '', src)
         src = re.sub(r'[\n\r]{0,1}$', '', src)
+        if isinstance(src, str) and frame:
+            src = src.decode(frame.source_encoding, 'replace')
+            src = src.encode('latin1', 'htmlentityreplace')
     except:
-        src = html_quote(orig_src)
+        if isinstance(src, str) and frame:
+            src = src.decode(frame.source_encoding, 'replace')
+            src = src.encode('latin1', 'htmlentityreplace')
+        else:
+            src = html_quote(orig_src)
     lines = src.splitlines()
     if len(lines) == 1:
         return lines[0]

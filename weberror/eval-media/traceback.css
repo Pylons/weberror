@@ -1,3 +1,5 @@
+/* @override http://localhost:5000/_debug/media/traceback.css */
+
 body{
     margin: 0px;
     padding: 0px;/* 4% 0 0;*/
@@ -12,12 +14,6 @@ body{
 
 /* Layout Styles */
 
-div.main-content-bg{
-    
-}
-div.main-content-bar{
-    
-}
 div#nav-bar{
     border-top: 1px solid #fff;
     float: right; 
@@ -179,6 +175,8 @@ a.no-underline, a.no-underline:link, a.no-underline:visited, a.no-underline:acti
 img.no-border{
     border: 0px;
 }
+
+
 /* Paragraph Styles */
 
 .last{
@@ -256,6 +254,7 @@ pre{
 div.feature-highlight{
     width: 550px;
     background: #eee;
+    margin-top: 50px;
     padding: 5px 10px 5px 10px;
 }
 

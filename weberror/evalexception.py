@@ -22,6 +22,7 @@ to see the full debuggable traceback.  Also, this URL is printed to
 ``wsgi.errors``, so you can open it up in another browser window.
 
 """
+import httplib
 import sys
 import os
 import cgi
@@ -32,16 +33,19 @@ import itertools
 import time
 import re
 import types
+import urllib
 
 from pkg_resources import resource_filename
 
-from paste import urlparser
+from paste import fileapp
 from paste import registry
 from paste import request
+from paste import urlparser
 from paste.util import import_string
 
 import evalcontext
 from weberror import errormiddleware, formatter, collector
+from weberror.util import escaping
 from tempita import HTMLTemplate
 from webob import Request, Response
 from webob import exc
@@ -192,8 +196,9 @@ class EvalException(object):
                  error_template_filename=None,
                  xmlhttp_key=None, media_paths=None, 
                  templating_formatters=None, head_html='', footer_html='',
-                 reporters=None,
+                 reporters=None, libraries=None,
                  **params):
+        self.libraries = libraries or []
         self.application = application
         self.debug_infos = {}
         self.templating_formatters = templating_formatters or []
@@ -238,7 +243,57 @@ class EvalException(object):
         if not getattr(method, 'exposed', False):
             return exc.HTTPForbidden('Access to %r is forbidden' % next_part)
         return method(req)
-
+    
+    def relay(self, req):
+        """Relay a request to a remote machine for JS proxying"""
+        host = req.GET['host']
+        conn = httplib.HTTPConnection(host)
+        headers = req.headers
+        
+        # Re-assemble the query string
+        query_str = {}
+        for param, val in req.GET.iteritems():
+            if param in ['host', 'path']: continue
+            query_str[param] = val
+        query_str = urllib.urlencode(query_str)
+        
+        # Transport a GET or a POST
+        if req.method == 'GET':
+            conn.request("GET", '%s?%s' % (req.GET['path'], query_str), headers=headers)
+        elif req.method == 'POST':
+            conn.request("POST", req.GET['path'], req.body, headers=headers)
+        
+        # Handle the response and pull out the headers to proxy back
+        resp = conn.getresponse()
+        res = Response()
+        for header, value in resp.getheaders():
+            if header.lower() in ['server', 'date']: continue
+            res.headers[header] = value
+        res.body = resp.read()
+        return res
+    relay.exposed=True
+    
+    def post_traceback(self, req):
+        """Post the long XML traceback to the host and path provided"""
+        debug_info = req.debug_info
+        long_xml_er = formatter.format_xml(debug_info.exc_data, 
+            show_hidden_frames=True, show_extra_data=False, 
+            libraries=self.libraries)[0]
+        host = req.GET['host']
+        headers = req.headers
+        conn = httplib.HTTPConnection(host)
+        headers = {'Content-Length':len(long_xml_er), 
+                   'Content-Type':'application/xml'}
+        conn.request("POST", req.GET['path'], long_xml_er, headers=headers)
+        resp = conn.getresponse()
+        res = Response()
+        for header, value in resp.getheaders():
+            if header.lower() in ['server', 'date']: continue
+            res.headers[header] = value
+        res.body = resp.read()
+        return res
+    post_traceback = get_debug_info(post_traceback)
+    
     def media(self, req):
         """Static path where images and other files live"""
         first_part = req.path_info_peek()
@@ -371,6 +426,11 @@ class EvalException(object):
         try:
             __traceback_supplement__ = errormiddleware.Supplement, self, environ
             app_iter = self.application(environ, detect_start_response)
+            
+            # Don't create a list from a paste.fileapp object 
+            if isinstance(app_iter, fileapp._FileIter): 
+                return app_iter
+            
             try:
                 return_iter = list(app_iter)
                 return return_iter
@@ -404,7 +464,7 @@ class EvalException(object):
             debug_info = DebugInfo(count, exc_info, exc_data, base_path,
                                    environ, view_uri, self.error_template,
                                    self.templating_formatters, self.head_html,
-                                   self.footer_html)
+                                   self.footer_html, self.libraries)
             assert count not in self.debug_infos
             self.debug_infos[count] = debug_info
 
@@ -424,7 +484,7 @@ class DebugInfo(object):
 
     def __init__(self, counter, exc_info, exc_data, base_path,
                  environ, view_uri, error_template, templating_formatters, 
-                 head_html, footer_html):
+                 head_html, footer_html, libraries):
         self.counter = counter
         self.exc_data = exc_data
         self.base_path = base_path
@@ -435,6 +495,7 @@ class DebugInfo(object):
         self.templating_formatters = templating_formatters
         self.head_html = head_html
         self.footer_html = footer_html
+        self.libraries = libraries
         self.exc_type, self.exc_value, self.tb = exc_info
         __exception_formatter__ = 1
         self.frames = []
@@ -471,7 +532,8 @@ class DebugInfo(object):
         return self.content()
 
     def content(self):
-        traceback_body, extra_data = format_eval_html(self.exc_data, self.base_path, self.counter)
+        traceback_body, extra_data = format_eval_html(self.exc_data, 
+            self.base_path, self.counter, self.libraries)
         repost_button = make_repost_button(self.environ)
         template_data = '<p>No Template information available.</p>'
         tab = 'traceback_data'
@@ -482,7 +544,14 @@ class DebugInfo(object):
                 tab = 'template_data'
                 template_data = result
                 break
-
+        
+        # Decode the exception value itself if needed
+        formatted_exc_value = self.exc_data.exception_value
+        if isinstance(formatted_exc_value, str):
+            last_frame = self.exc_data.frames[-1]
+            formatted_exc_value = formatted_exc_value.decode(last_frame.source_encoding, 'replace')
+        formatted_exc_value = formatted_exc_value.encode('latin1', 'htmlentityreplace')
+        
         template_data = template_data.replace('<h2>', '<h1 class="first">')
         template_data = template_data.replace('</h2>', '</h1>')
         if hasattr(self.exc_data.exception_type, '__name__'):
@@ -497,6 +566,7 @@ class DebugInfo(object):
             traceback_body=traceback_body,
             exc_data=self.exc_data,
             exc_name=exc_name,
+            formatted_exc_value=formatted_exc_value,
             extra_data=extra_data,
             template_data=template_data,
             set_tab=tab,
@@ -527,7 +597,7 @@ class EvalHTMLFormatter(formatter.HTMLFormatter):
 
 
 def make_table(items):
-    if isinstance(items, dict):
+    if hasattr(items, 'items'):
         items = items.items()
         items.sort()
     return table_template.substitute(
@@ -575,7 +645,7 @@ def pprint_format(value, safe=False):
             raise
     return out.getvalue()
 
-def format_eval_html(exc_data, base_path, counter):
+def format_eval_html(exc_data, base_path, counter, libraries):
     short_formatter = EvalHTMLFormatter(
         base_path=base_path,
         counter=counter,
@@ -592,9 +662,9 @@ def format_eval_html(exc_data, base_path, counter):
     long_text_er = formatter.format_text(exc_data, show_hidden_frames=True,
                                          show_extra_data=False)[0]
     long_xml_er = formatter.format_xml(exc_data, show_hidden_frames=True, 
-                                  show_extra_data=False)[0]
+                                  show_extra_data=False, libraries=libraries)[0]
     short_xml_er = formatter.format_xml(exc_data, show_hidden_frames=False, 
-                                  show_extra_data=False)[0]
+                                  show_extra_data=False, libraries=libraries)[0]
     
     if short_formatter.filter_frames(exc_data.frames) != \
         long_formatter.filter_frames(exc_data.frames):
@@ -679,7 +749,7 @@ input_form = HTMLTemplate('''
  display: none"></div>
 <input type="text" name="input" id="debug_input_{{tbid}}"
  style="width: 100%"
- autocomplete="off" onkeypress="upArrow(this, event)"><br>
+ autocomplete="off"><br>
 <input type="submit" value="Execute" name="submitbutton"
  onclick="return submitInput(this, {{tbid}})"
  id="submit_{{tbid}}"
