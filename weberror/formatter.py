@@ -16,13 +16,11 @@ from pygments import highlight as pygments_highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import HtmlFormatter
 
-=======
 try:
     import pkg_resources
 except ImportError:
     pkg_resources = None
 
->>>>>>> /tmp/formatter.py~other.sXSt40
 def html_quote(s):
     return cgi.escape(str(s), True)
 
@@ -301,17 +299,10 @@ class HTMLFormatter(TextFormatter):
             filename, frame.modname or '?', frame.lineno or '?',
             name)
     def format_long_source(self, source, long_source):
-<<<<<<< /home/ianb/src/weberror/weberror/formatter.py
-        q_long_source = str2html(long_source, False, 4, True)
-        q_source = str2html(source, True, 0, False)
-        return ('<div style="display: none" class="source" source-type="long"><a class="switch_source" onclick="return switch_source(this, \'long\')" href="#">&lt;&lt;&nbsp; </a>%s</div>'
-                '<div class="source" source-type="short"><a onclick="return switch_source(this, \'short\')" class="switch_source" href="#">&gt;&gt;&nbsp; </a>%s</div>'
-=======
         q_long_source = str2html(long_source, False, 4, True, getattr(self, 'frame', None))
         q_source = str2html(source, True, 0, False, getattr(self, 'frame', None))
-        return ('<code style="display: none" class="source" source-type="long"><a class="switch_source" onclick="return switch_source(this, \'long\')" href="#">&lt;&lt;&nbsp; </a>%s</code>'
-                '<code class="source" source-type="short"><a onclick="return switch_source(this, \'short\')" class="switch_source" href="#">&gt;&gt;&nbsp; </a>%s</code>'
->>>>>>> /tmp/formatter.py~other.sXSt40
+        return ('<div style="display: none" class="source" source-type="long"><a class="switch_source" onclick="return switch_source(this, \'long\')" href="#">&lt;&lt;&nbsp; </a>%s</div>'
+                '<div class="source" source-type="short"><a onclick="return switch_source(this, \'short\')" class="switch_source" href="#">&gt;&gt;&nbsp; </a>%s</div>'
                 % (q_long_source,
                    q_source))
     def format_source(self, source_line):
