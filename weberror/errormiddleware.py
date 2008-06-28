@@ -365,8 +365,8 @@ def handle_exception(exc_info, error_stream, html=True,
         else:
             reported = True
     if reporters:
-        for reporter in reporters:
-            rep_err = send_report(reporter, exc_data, html=html)
+        for rep in reporters:
+            rep_err = send_report(rep, exc_data, html=html)
             if rep_err:
                 extra_data += rep_err
             else:
