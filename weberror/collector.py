@@ -384,6 +384,12 @@ class ExceptionCollector(object):
                 # This is when something is really messed up, but this can
                 # happen when the __str__ of an object has to handle unicode
                 return repr(obj)
+        except:
+            try:
+                extra = ' (exception showing exception: %s)' % str(sys.exc_info()[1])
+            except:
+                extra = ''
+            return repr(obj) + extra
 
 limit = 200
 
