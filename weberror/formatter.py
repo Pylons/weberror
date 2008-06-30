@@ -508,19 +508,22 @@ class XMLFormatter(AbstractFormatter):
 def format_html(exc_data, include_hidden_frames=False, **ops):
     if not include_hidden_frames:
         return HTMLFormatter(**ops).format_collected_data(exc_data)
-    short_er = format_html(exc_data, show_hidden_frames=False, **ops)
-    # @@: This should have a way of seeing if the previous traceback
-    # was actually trimmed at all
+    short_er = None
+    if not include_hidden_frames:
+        short_er, head_html = format_html(exc_data, show_hidden_frames=False, **ops)
     ops['include_reusable'] = False
     ops['show_extra_data'] = False
     long_er, head_html = format_html(exc_data, show_hidden_frames=True, **ops)
+    if not include_hidden_frames and short_er == long_er:
+        # Suppress the short error if it is identical to the long one
+        short_er = None
     text_er, head_text = format_text(exc_data, show_hidden_frames=True, **ops)
     xml_er, head_xml = format_xml(exc_data, show_hidden_frames=True, **ops)
+    if short_er:
+        short_er = '<div id="short_traceback">%s</div>\n' % short_er
     return """
     %s
-    <div id="short_traceback">
     %s
-    </div>
     <div id="full_traceback" class="hidden-data">
     %s
     </div>
@@ -530,7 +533,7 @@ def format_html(exc_data, include_hidden_frames=False, **ops):
     <div id="xml_version" class="hidden-data">
     <textarea style="width: 100%%" rows=10 cols=60>%s</textarea>
     </div>
-    """ % (head_html, short_er, long_er, cgi.escape(text_er), cgi.escape(xml_er))
+    """ % ('\n'.join(head_html), short_er or '', long_er, cgi.escape(text_er), cgi.escape(xml_er))
 
         
 def format_text(exc_data, **ops):
