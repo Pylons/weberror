@@ -385,3 +385,8 @@ $(document).ready(function() {
         return false;
     });
 });
+
+/* Fix case when Firebug isn't present: */
+if (typeof console == 'undefined') {
+    var console = {log: function (msg) {}};
+}
