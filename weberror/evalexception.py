@@ -372,9 +372,9 @@ class EvalException(object):
             registry.restorer.restoration_end()
         input_html = formatter.str2html(input)
         res = Response(content_type='text/html')
-        res.body = (
+        res.write(
             '<code style="color: #060">&gt;&gt;&gt;</code> '
-            '<code>%s</code><br>\n%s'
+            '%s<br>\n%s'
             % (preserve_whitespace(input_html, quote=False),
                preserve_whitespace(output)))
         return res
