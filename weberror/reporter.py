@@ -35,14 +35,28 @@ class EmailReporter(Reporter):
     to_addresses = None
     from_address = None
     smtp_server = 'localhost'
+    smtp_username = None
+    smtp_password = None
+    smtp_use_tls = False
     subject_prefix = ''
 
     def report(self, exc_data):
         msg = self.assemble_email(exc_data)
         server = smtplib.SMTP(self.smtp_server)
-        server.sendmail(self.from_address,
+        if self.smtp_use_tls:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+        if self.smtp_username and self.smtp_password:
+            server.login(self.smtp_username, self.smtp_password)
+        ## FIXME: this should check the return value from this function:
+        result = server.sendmail(self.from_address,
                         self.to_addresses, msg.as_string())
-        server.quit()
+        try:
+            server.quit()
+        except sslerror:
+            # sslerror is raised in tls connections on closing sometimes
+            pass
 
     def check_params(self):
         if not self.to_addresses:
@@ -53,12 +67,12 @@ class EmailReporter(Reporter):
             self.to_addresses = [self.to_addresses]
 
     def assemble_email(self, exc_data):
-        short_html_version = self.format_html(
-            exc_data, show_hidden_frames=False)[0]
-        long_html_version = self.format_html(
-            exc_data, show_hidden_frames=True)[0]
+        short_html_version, short_extra = self.format_html(
+            exc_data, show_hidden_frames=False, show_extra_data=True)
+        long_html_version, long_extra = self.format_html(
+            exc_data, show_hidden_frames=True, show_extra_data=True)
         text_version = self.format_text(
-            exc_data, show_hidden_frames=False)[0]
+            exc_data, show_hidden_frames=True, show_extra_data=True)[0]
         msg = MIMEMultipart()
         msg.set_type('multipart/alternative')
         msg.preamble = msg.epilogue = ''
@@ -66,11 +80,11 @@ class EmailReporter(Reporter):
         text_msg.set_type('text/plain')
         text_msg.set_param('charset', 'ASCII')
         msg.attach(text_msg)
-        html_msg = MIMEText(short_html_version)
+        html_msg = MIMEText(short_html_version + ''.join(short_extra))
         html_msg.set_type('text/html')
         # @@: Correct character set?
         html_msg.set_param('charset', 'UTF-8')
-        html_long = MIMEText(long_html_version)
+        html_long = MIMEText(long_html_version + ''.join(long_extra))
         html_long.set_type('text/html')
         html_long.set_param('charset', 'UTF-8')
         msg.attach(html_msg)
