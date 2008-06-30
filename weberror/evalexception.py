@@ -551,6 +551,7 @@ class DebugInfo(object):
             last_frame = self.exc_data.frames[-1]
             formatted_exc_value = formatted_exc_value.decode(last_frame.source_encoding, 'replace')
         formatted_exc_value = formatted_exc_value.encode('latin1', 'htmlentityreplace')
+        formatted_exc_value = html_quote(formatted_exc_value)
         
         template_data = template_data.replace('<h2>', '<h1 class="first">')
         template_data = template_data.replace('</h2>', '</h1>')
