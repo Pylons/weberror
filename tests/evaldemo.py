@@ -7,7 +7,7 @@ def error_application(environ, start_response):
 
 def sub_application(environ, start_response):
     test = 10
-    raise Exception('The expected error')
+    raise Exception('The expected <error>')
 
 if __name__ == '__main__':
     from paste.httpserver import serve

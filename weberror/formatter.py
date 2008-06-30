@@ -276,7 +276,8 @@ class HTMLFormatter(TextFormatter):
     def quote(self, s):
         if isinstance(s, str) and hasattr(self, 'frame'):
             s = s.decode(self.frame.source_encoding, 'replace')
-        return s.encode('latin1', 'htmlentityreplace')
+        s = s.encode('latin1', 'htmlentityreplace')
+        return html_quote(s)
     
     def quote_long(self, s):
         return '<pre>%s</pre>' % self.quote(s)
