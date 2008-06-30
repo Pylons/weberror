@@ -30,7 +30,7 @@ def highlight_python(code, linenos=False, lineanchors=None):
     if lineanchors is None and linenos:
         lineanchors = 'code'
     return pygments_highlight(code, PythonLexer(),
-                              HtmlFormatter(linenos=linenos, lineanchors=lineanchors))
+                              HtmlFormatter(linenos=linenos, lineanchors=lineanchors, cssclass=''))
 
 class AbstractFormatter(object):
 
@@ -572,6 +572,9 @@ def _str2html(src, strip=False, indent_subsequent=0,
         src = pre_re.sub('', src)
         src = re.sub(r'^[\n\r]{0,1}', '', src)
         src = re.sub(r'[\n\r]{0,1}$', '', src)
+        # This gets rid of the <div> that Pygments adds:
+        if src.strip().startswith('<div>') and src.strip().endswith('</div>'):
+            src = src.strip()[len('<div>'):-len('</div>')]
         if isinstance(src, str) and frame:
             src = src.decode(frame.source_encoding, 'replace')
             src = src.encode('latin1', 'htmlentityreplace')
