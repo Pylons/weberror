@@ -1,7 +1,7 @@
 WebError Changelog
 ==================
 
-0.9 (**tip**)
+0.9 (07/08/2008)
 * Switched to using Pygments for highlighting.
 * Added better handling of exceptions that don't cleanly convert to str().
 * Added dependency library listings for XML output.
