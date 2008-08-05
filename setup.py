@@ -30,11 +30,8 @@ setup(name='WebError',
       package_data = { 'weberror.evalexception': [ "*.html.tmpl", "media/*" ] },
       zip_safe=False,
       install_requires=[
-        'WebOb',
-        'wsgiref',
-        'Tempita',
-        'Pygments',
-        'simplejson',
+        'WebOb', 'wsgiref', 'Tempita', 'Pygments', 'simplejson',
+        'Paste>=1.7.1'
       ],
       test_suite='nose.collector',
       tests_require=['nose', 'webtest', 'Paste'],
