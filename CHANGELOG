@@ -1,6 +1,10 @@
 WebError Changelog
 ==================
 
+0.10 (**tip**)
+* Making main page links more accessible to browsers with no JS on per
+  Pylons Trac ticket #489.
+
 0.9 (07/08/2008)
 * Switched to using Pygments for highlighting.
 * Added better handling of exceptions that don't cleanly convert to str().
