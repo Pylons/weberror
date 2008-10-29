@@ -1,6 +1,9 @@
 WebError Changelog
 ==================
 
+0.10 (**tip**)
+
+
 0.9.1 (10/28/2008)
 * Python 2.6 compatibility
 * Making main page links more accessible to browsers with no JS on per
