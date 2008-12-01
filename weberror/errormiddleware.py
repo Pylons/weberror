@@ -165,10 +165,12 @@ class ErrorMiddleware(object):
             exc_info = sys.exc_info()
             try:
                 start_response('500 Internal Server Error',
-                               [('content-type', 'text/html')],
+                               [('content-type', 'text/html; charset=utf8')],
                                exc_info)
                 # @@: it would be nice to deal with bad content types here
                 response = self.exception_handler(exc_info, environ)
+                if isinstance(response, unicode):
+                    response = response.encode('utf8')
                 return [response]
             finally:
                 # clean up locals...
@@ -480,7 +482,7 @@ def error_template(head_html, exception, extra):
 def make_error_middleware(app, global_conf, **kw):
     return ErrorMiddleware(app, global_conf=global_conf, **kw)
 
-doc_lines = ErrorMiddleware.__doc__.splitlines(True)
+doc_lines = (ErrorMiddleware.__doc__ or '').splitlines(True)
 for i in range(len(doc_lines)):
     if doc_lines[i].strip().startswith('Settings'):
         make_error_middleware.__doc__ = ''.join(doc_lines[i:])
