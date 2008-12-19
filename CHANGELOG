@@ -1,8 +1,10 @@
 WebError Changelog
 ==================
 
-0.10 (**tip**)
-
+0.10 (12/18/2008)
+* Fixed syntax highlighting.
+* Fix a case where the response could become unicode; fix the docstring
+  patching when using python -O
 
 0.9.1 (10/28/2008)
 * Python 2.6 compatibility
