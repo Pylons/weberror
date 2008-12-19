@@ -13,7 +13,8 @@ import sys
 from weberror.util import escaping
 from xml.dom.minidom import getDOMImplementation
 from pygments import highlight as pygments_highlight
-from pygments.lexers import PythonLexer
+from pygments.lexers import ClassNotFound, PythonLexer, TextLexer, \
+    get_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
 try:
@@ -26,11 +27,26 @@ def html_quote(s):
 
 pygments_css = HtmlFormatter().get_style_defs('.highlight')
 
-def highlight_python(code, linenos=False, lineanchors=None):
+def highlight(filename, code, linenos=False, lineanchors=None,
+              cssclass='highlight'):
     if lineanchors is None and linenos:
         lineanchors = 'code'
-    return pygments_highlight(code, PythonLexer(),
-                              HtmlFormatter(linenos=linenos, lineanchors=lineanchors, cssclass=''))
+    lexer = None
+    if filename:
+        if filename.endswith('.py'):
+            # XXX: Pygments gives back NumPyLexer for some reason, which
+            # we don't need
+            lexer = PythonLexer()
+        else:
+            try:
+                lexer = get_lexer_for_filename(filename)
+            except ClassNotFound:
+                pass
+    if not lexer:
+        lexer = TextLexer()
+    formatter = HtmlFormatter(linenos=linenos, lineanchors=lineanchors,
+                              cssclass=cssclass, classprefix='highlight. ')
+    return pygments_highlight(code, lexer, formatter)
 
 class AbstractFormatter(object):
 
@@ -94,8 +110,8 @@ class AbstractFormatter(object):
             source = frame.get_source_line()
             long_source = frame.get_source_line(2)
             if source:
-                lines.append(self.format_long_source(
-                    source, long_source))
+                lines.append(self.format_long_source(filename, source,
+                                                     long_source))
             res = self.format_frame_end(frame)
             if res:
                 lines.append(res)
@@ -224,9 +240,9 @@ class TextFormatter(AbstractFormatter):
     def format_source_line(self, filename, frame):
         return 'File %r, line %s in %s' % (
             filename, frame.lineno or '?', frame.name or '?')
-    def format_long_source(self, source, long_source):
-        return self.format_source(source)
-    def format_source(self, source_line):
+    def format_long_source(self, filename, source, long_source):
+        return self.format_source(filename, source)
+    def format_source(self, filename, source_line):
         return '  ' + self.quote(source_line.strip())
     def format_exception_info(self, etype, evalue):
         return self.emphasize(
@@ -299,14 +315,16 @@ class HTMLFormatter(TextFormatter):
         return 'Module <span class="module" title="%s">%s</span>:<b>%s</b> in <code>%s</code>' % (
             filename, frame.modname or '?', frame.lineno or '?',
             name)
-    def format_long_source(self, source, long_source):
-        q_long_source = str2html(long_source, False, 4, True, getattr(self, 'frame', None))
-        q_source = str2html(source, True, 0, False, getattr(self, 'frame', None))
+    def format_long_source(self, filename, source, long_source):
+        q_long_source = str2html(long_source, False, 4, True, getattr(self, 'frame', None),
+                                 filename=filename)
+        q_source = str2html(source, True, 0, False, getattr(self, 'frame', None),
+                            filename=filename)
         return ('<div style="display: none" class="source highlight" source-type="long"><a class="switch_source" onclick="return switch_source(this, \'long\')" href="#">&lt;&lt;&nbsp; </a>%s</div>'
-                '<div class="source" source-type="short"><a onclick="return switch_source(this, \'short\')" class="switch_source" href="#">&gt;&gt;&nbsp; </a>%s</div>'
+                '<div class="source highlight" source-type="short"><a onclick="return switch_source(this, \'short\')" class="switch_source" href="#">&gt;&gt;&nbsp; </a>%s</div>'
                 % (q_long_source,
                    q_source))
-    def format_source(self, source_line):
+    def format_source(self, filename, source_line):
         return '&nbsp;&nbsp;<code class="source">%s</code>' % self.quote(source_line.strip())
     def format_traceback_info(self, info):
         return '<pre>%s</pre>' % self.quote(info)
@@ -458,7 +476,7 @@ class XMLFormatter(AbstractFormatter):
             source = frame.get_source_line()
             long_source = frame.get_source_line(2)
             if source:
-                self.format_long_source(
+                self.format_long_source(filename,
                     source.decode(frame.source_encoding, 'replace'),
                     long_source.decode(frame.source_encoding, 'replace'),
                     newdoc, xml_frame)
@@ -489,7 +507,7 @@ class XMLFormatter(AbstractFormatter):
         xml_frame.appendChild(create_text_node(newdoc, 'line', str(frame.lineno) or '?'))
         xml_frame.appendChild(create_text_node(newdoc, 'function', name))
     
-    def format_long_source(self, source, long_source, newdoc, xml_frame):
+    def format_long_source(self, filename, source, long_source, newdoc, xml_frame):
         source = source.encode('ascii', 'xmlcharrefreplace')
         long_source = long_source.encode('ascii', 'xmlcharrefreplace')
         xml_frame.appendChild(create_text_node(newdoc, 'operation', source.strip()))
@@ -549,7 +567,7 @@ pre_re = re.compile(r'</?pre.*?>')
 error_re = re.compile(r'<h3>ERROR: .*?</h3>')
 
 def str2html(src, strip=False, indent_subsequent=0,
-             highlight_inner=False, frame=None):
+             highlight_inner=False, frame=None, filename=None):
     """
     Convert a string to HTML.  Try to be really safe about it,
     returning a quoted version of the string if nothing else works.
@@ -557,7 +575,8 @@ def str2html(src, strip=False, indent_subsequent=0,
     try:
         return _str2html(src, strip=strip,
                          indent_subsequent=indent_subsequent,
-                         highlight_inner=highlight_inner, frame=frame)
+                         highlight_inner=highlight_inner, frame=frame,
+                         filename=filename)
     except:
         if isinstance(src, str) and frame:
             src = src.decode(frame.source_encoding, 'replace')
@@ -566,19 +585,20 @@ def str2html(src, strip=False, indent_subsequent=0,
         return html_quote(src)
 
 def _str2html(src, strip=False, indent_subsequent=0,
-              highlight_inner=False, frame=None):
+              highlight_inner=False, frame=None, filename=None):
     if strip:
         src = src.strip()
     orig_src = src
     try:
-        src = highlight_python(src)
+        src = highlight(filename, src)
         src = error_re.sub('', src)
         src = pre_re.sub('', src)
         src = re.sub(r'^[\n\r]{0,1}', '', src)
         src = re.sub(r'[\n\r]{0,1}$', '', src)
         # This gets rid of the <div> that Pygments adds:
-        if src.strip().startswith('<div>') and src.strip().endswith('</div>'):
-            src = src.strip()[len('<div>'):-len('</div>')]
+        if src.strip().startswith('<div class="highlight">') and \
+                src.strip().endswith('</div>'):
+            src = src.strip()[len('<div class="highlight">'):-len('</div>')]
         if isinstance(src, str) and frame:
             src = src.decode(frame.source_encoding, 'replace')
             src = src.encode('latin1', 'htmlentityreplace')
@@ -591,6 +611,8 @@ def _str2html(src, strip=False, indent_subsequent=0,
     lines = src.splitlines()
     if len(lines) == 1:
         return lines[0]
+    # XXX: Lame variable width font, I think, requires +3 padding
+    indent_subsequent += 3 
     indent = ' '*indent_subsequent
     for i in range(1, len(lines)):
         lines[i] = indent+lines[i]

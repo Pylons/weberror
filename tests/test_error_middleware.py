@@ -1,10 +1,9 @@
-from webtest import TestApp
+from webtest import TestApp, lint
 from weberror.errormiddleware import ErrorMiddleware
-from wsgiref.validate import validator
 from paste.util.quoting import strip_html
 
 def do_request(app, expect_status=500):
-    app = validator(app)
+    app = lint.middleware(app)
     app = ErrorMiddleware(app, {}, debug=True)
     app = clear_middleware(app)
     testapp = TestApp(app)
@@ -68,7 +67,7 @@ def test_makes_exception():
     res = strip_html(str(res.body))
     assert 'bad_app() takes no arguments (2 given' in res
     assert 'application(environ, sr_checker)' in res
-    assert 'wsgiref.validate' in res
+    assert 'webtest.lint' in res
     assert 'weberror.errormiddleware' in res
 
 def test_start_res():
@@ -79,7 +78,7 @@ def test_start_res():
     assert 'test_error_middleware' in res
 	# This assertion assumes that the start_response_app returns on line 45
 	# of this file.
-    assert ':45 in start_response_app' in res
+    assert ':44 in start_response_app' in res
 
 def test_after_start():
     res = do_request(after_start_response_app, 200)
@@ -87,10 +86,10 @@ def test_after_start():
     assert 'ValueError: error2' in res
 	# This assertion assumes that the start_response_app returns on line 45
 	# of this file.
-    assert ':49' in res
+    assert ':48' in res
 
 def test_iter_app():
-    res = do_request(validator(iter_app), 200)
+    res = do_request(lint.middleware(iter_app), 200)
     #print res
     assert 'None raises error' in res
     assert 'yielder' in res
