@@ -398,8 +398,9 @@ class EvalException(object):
         f.close()
         html = (
             ('<div>Module: <b>%s</b> file: %s</div>'
-             % (module_name, filename))
-            + formatter.highlight_python(source, linenos=True))
+             '<style type="text/css">%s</style>'
+             % (module_name, filename, formatter.pygments_css))
+            + formatter.highlight(filename, source, linenos=True))
         source_lines = len(source.splitlines())
         if source_lines < 60:
             html += '\n<br>'*(60-source_lines)
