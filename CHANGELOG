@@ -1,8 +1,12 @@
 WebError Changelog
 ==================
 
-0.10 (**tip**)
+0.10.1 (**tip**)
+* Fix view source when __file__ is .pyo or $py.class.
 
+0.10 (12/19/2008)
+* Fix indentation of code lines in the traceback view.
+* Enable syntax highlighting in view source.
 
 0.9.1 (10/28/2008)
 * Python 2.6 compatibility
