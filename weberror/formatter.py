@@ -45,7 +45,7 @@ def highlight(filename, code, linenos=False, lineanchors=None,
     if not lexer:
         lexer = TextLexer()
     formatter = HtmlFormatter(linenos=linenos, lineanchors=lineanchors,
-                              cssclass=cssclass, classprefix='highlight. ')
+                              cssclass=cssclass)
     return pygments_highlight(code, lexer, formatter)
 
 class AbstractFormatter(object):
