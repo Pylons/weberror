@@ -391,8 +391,10 @@ class EvalException(object):
             res.body = 'The module <code>%s</code> does not have an entry in sys.modules' % module_name
             return res
         filename = module.__file__
-        if filename.endswith('.pyc'):
+        if filename[-4:] in ('.pyc', '.pyo'):
             filename = filename[:-1]
+        elif filename.endswith('$py.class'):
+            filename = '%s.py' % filename[:-9]
         f = open(filename, 'rb')
         source = f.read()
         f.close()
