@@ -1,8 +1,12 @@
 WebError Changelog
 ==================
 
+0.10.1 (12/29/2008)
+* Fix view source when __file__ is .pyo or $py.class.
+
 0.10 (12/18/2008)
-* Fixed syntax highlighting.
+* Fix indentation of code lines in the traceback view.
+* Enable syntax highlighting in view source.
 * Fix a case where the response could become unicode; fix the docstring
   patching when using python -O
 
