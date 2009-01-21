@@ -277,6 +277,8 @@ function switch_display(id) {
     el.className = "active";
     var el = document.getElementById(id+'_tab');
     el.className = "active";
+
+    return false;
 }
 
 function hide_display(id) {

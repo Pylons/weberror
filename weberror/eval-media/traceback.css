@@ -254,8 +254,10 @@ pre{
 div.feature-highlight{
     width: 550px;
     background: #eee;
-    margin-top: 50px;
-    padding: 5px 10px 5px 10px;
+    margin-top: 0px;
+    padding: 12px 15px 15px 15px;
+    border-bottom: 1px solid #ccc;
+    border-right: 1px solid #ddd;
 }
 
 /* Horizontal Rule */
@@ -318,7 +320,7 @@ ul.large li a {
 
 h1.first{
     margin-top: 0px;
-    margin-bottom: 2px;
+    margin-bottom: 0px;
     border-bottom: 1px solid #666;
     background: #fFF;
     padding: 3px;
@@ -356,14 +358,26 @@ h4.asterix{
     color: #000000;
 }
 
+.main-exception-bar {
+    background: #f8f8f8;
+    border-bottom: 1px solid #ccc;
+    padding: 10px 0px;
+    margin-bottom: 17px;
+}
 .main-exception {
     font-size: 200%;
+}
+span.main-exception {
+    margin-left: 19px;
+    margin-right: 10px;
+}
+code.main-exception {
 }
 
 /* Boxes */
 
 #formats {
-    margin: 0 0 12px 14px;
+    margin: -17px 4px 4px 5px;
     font-size: 11px;
     color: #888;
     float: right;
@@ -513,7 +527,7 @@ tr.header {
 }
 
 tr.even {
-  background-color: #ddd;
+  background-color: #e8e8e8;
 }
 
 table.variables td {
