@@ -258,7 +258,7 @@ class TextFormatter(AbstractFormatter):
         return self.format_combine_lines(lines), ''
 
     def format_combine_lines(self, lines):
-        return '\n'.join(lines)
+        return '\n'.join([convert_to_str(line) for line in lines])
 
     def format_extra_data(self, importance, title, value):
         if isinstance(value, str):
@@ -675,3 +675,8 @@ def make_pre_wrappable(html, wrap_limit=60,
                     break
         new_lines.append(line)
     return '\n'.join(lines)
+
+def convert_to_str(s):
+    if isinstance(s, unicode):
+        return s.encode('utf8')
+    return s
