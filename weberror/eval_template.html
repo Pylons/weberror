@@ -41,10 +41,10 @@
 
             <ul id="navlist">
                <!--  {{#links|html}} -->
-               <li id="source_data_tab"><a href="#source_data" onclick="javascript:switch_display('source_data')" accesskey="4" id="source_data_link">Source</a></li>
-               <li id="template_data_tab"><a href="#template_data" onclick="javascript:switch_display('template_data')" accesskey="3" id="template_data_link">Template</a></li>
-               <li id="extra_data_tab"><a href="#extra_data" onclick="javascript:switch_display('extra_data')" id="extra_data_link" accesskey="2" >Extra Data</a></li>
-               <li id="traceback_data_tab" class="active"><a href="#traceback_data" onclick="javascript:switch_display('traceback_data')" id="traceback_data_link" class="active" accesskey="1">Traceback</a></li>
+               <li id="source_data_tab"><a href="#source_data" onclick="javascript:return switch_display('source_data');" accesskey="4" id="source_data_link">Source</a></li>
+               <li id="template_data_tab"><a href="#template_data" onclick="javascript:return switch_display('template_data');" accesskey="3" id="template_data_link">Template</a></li>
+               <li id="extra_data_tab"><a href="#extra_data" onclick="javascript:return switch_display('extra_data');" id="extra_data_link" accesskey="2" >Extra Data</a></li>
+               <li id="traceback_data_tab" class="active"><a href="#traceback_data" onclick="javascript:return switch_display('traceback_data');" id="traceback_data_link" class="active" accesskey="1">Traceback</a></li>
             </ul>
     </div>
     <div id="main-content">
@@ -64,15 +64,17 @@
             </div>
             <div id="traceback_data">
 <div style="float: left; width: 100%; padding-bottom: 20px;">
-<h1 class="first"><a name="content"></a>Error Traceback:</h1>
+<h1 class="first"><a name="content"></a>WebError Traceback:</h1>
+<div class="main-exception-bar">
+  <span class="main-exception" style="color: #f00;">&#8669;</span>
+  <code class="main-exception">{{exc_name}}: {{formatted_exc_value|html}}</code>
+</div>
 <div id="formats">
    <span class="title">View as: &nbsp;</span> <a id="view_short_html" class="active" href="#">Interactive</a> 
    <a id="view_long_html" href="#">(full)</a> &nbsp;|&nbsp; <a id="view_short_text" href="#">Text</a>  
    <a id="view_long_text" href="#">(full)</a> &nbsp;|&nbsp; <a id="view_short_xml" href="#">XML</a> 
    <a id="view_long_xml" href="#">(full)</a>
-</div>
-<div><span class="main-exception" style="color: #f00;">&#8669;</span>
-  <code class="main-exception">{{exc_name}}: {{formatted_exc_value|html}}</code></div>
+</div>  
 <div style="clear: both;">
 <div id="error-area" style="display: none; background-color: #600; color: #fff; border: 2px solid black">
 <button onclick="return clearError()">clear this</button>
