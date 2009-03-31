@@ -462,7 +462,7 @@ class EvalException(object):
             exc_data = collector.collect_exception(*exc_info)
             exc_data.view_url = view_uri
             if self.reporters:
-                for reporter in reporters:
+                for reporter in self.reporters:
                     reporter.report(exc_data)
             debug_info = DebugInfo(count, exc_info, exc_data, base_path,
                                    environ, view_uri, self.error_template,
