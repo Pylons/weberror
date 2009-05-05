@@ -31,7 +31,7 @@ class ErrorMiddleware(object):
     
     Usage::
 
-        error_caching_wsgi_app = ErrorMiddleware(wsgi_app)
+        error_catching_wsgi_app = ErrorMiddleware(wsgi_app)
 
     Settings:
 
