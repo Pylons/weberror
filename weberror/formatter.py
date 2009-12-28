@@ -307,7 +307,7 @@ class HTMLFormatter(TextFormatter):
         for line in lines:
             if not line.startswith('<div') and not line.endswith('</div>'):
                 line += '<br>'
-            new_lines.append(line)
+            new_lines.append(convert_to_str(line))
         return '\n'.join(new_lines)
     def format_source_line(self, filename, frame):
         self.frame = frame
