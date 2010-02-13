@@ -1,6 +1,10 @@
 WebError Changelog
 ==================
 
+0.10.2 (2/12/2010)
+* Fix bug when displaying UTF-8 type errors.
+* Fix bug when emailing data with UTF-8.
+
 0.10.1 (12/29/2008)
 * Fix view source when __file__ is .pyo or $py.class.
 

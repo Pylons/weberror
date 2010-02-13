@@ -78,7 +78,7 @@ class EmailReporter(Reporter):
         msg.preamble = msg.epilogue = ''
         text_msg = MIMEText(text_version)
         text_msg.set_type('text/plain')
-        text_msg.set_param('charset', 'ASCII')
+        text_msg.set_param('charset', 'UTF-8')
         msg.attach(text_msg)
         html_msg = MIMEText(short_html_version + ''.join(short_extra))
         html_msg.set_type('text/html')
