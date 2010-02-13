@@ -76,24 +76,23 @@ class EmailReporter(Reporter):
         msg = MIMEMultipart()
         msg.set_type('multipart/alternative')
         msg.preamble = msg.epilogue = ''
-        text_msg = MIMEText(text_version)
+        text_msg = MIMEText(as_str(text_version))
         text_msg.set_type('text/plain')
         text_msg.set_param('charset', 'UTF-8')
         msg.attach(text_msg)
-        html_msg = MIMEText(short_html_version + ''.join(short_extra))
+        html_msg = MIMEText(as_str(short_html_version) + as_str(''.join(short_extra)))
         html_msg.set_type('text/html')
-        # @@: Correct character set?
         html_msg.set_param('charset', 'UTF-8')
-        html_long = MIMEText(long_html_version + ''.join(long_extra))
+        html_long = MIMEText(as_str(long_html_version) + as_str(''.join(long_extra)))
         html_long.set_type('text/html')
         html_long.set_param('charset', 'UTF-8')
         msg.attach(html_msg)
         msg.attach(html_long)
-        subject = '%s: %s' % (exc_data.exception_type,
-                           formatter.truncate(str(exc_data.exception_value)))
-        msg['Subject'] = self.subject_prefix + subject
-        msg['From'] = self.from_address
-        msg['To'] = ', '.join(self.to_addresses)
+        subject = as_str('%s: %s' % (exc_data.exception_type,
+                                     formatter.truncate(str(exc_data.exception_value))))
+        msg['Subject'] = as_str(self.subject_prefix) + subject
+        msg['From'] = as_str(self.from_address)
+        msg['To'] = as_str(', '.join(self.to_addresses))
         return msg
 
 class LogReporter(Reporter):
@@ -126,7 +125,6 @@ class FileReporter(Reporter):
     def report(self, exc_data):
         text = self.format_text(
             exc_data, show_hidden_frames=self.show_hidden_frames)
-        print text
         self.file.write(text + '\n' + '-'*60 + '\n')
 
 class WSGIAppReporter(Reporter):
@@ -137,3 +135,12 @@ class WSGIAppReporter(Reporter):
     def __call__(self, environ, start_response):
         start_response('500 Server Error', [('Content-type', 'text/html')])
         return [formatter.format_html(self.exc_data)]
+
+def as_str(v):
+    if isinstance(v, str):
+        return v
+    if not isinstance(v, unicode):
+        v = unicode(v)
+    if isinstance(v, unicode):
+        v = v.encode('utf8')
+    return v
