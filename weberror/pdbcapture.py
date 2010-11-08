@@ -1,14 +1,17 @@
 from webob import Request, Response
 import threading
 from paste.util import threadedprint
-from Queue import Queue
 from itertools import count
 import tempita
 from paste.urlparser import StaticURLParser
 from paste.util.filemixin import FileMixin
 import os
 import sys
-import simplejson
+
+try:
+    import json
+except ImportError: # pragma: no cover
+    import simplejson as json
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -85,7 +88,7 @@ class PdbCapture(object):
         if not state['stdin_event'].isSet():
             body['stdinPending'] = 1
         resp = Response(content_type='application/json',
-                        body=simplejson.dumps(body))
+                        body=json.dumps(body))
         return resp
 
     def call_app(self, req, state):

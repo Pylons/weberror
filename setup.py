@@ -1,7 +1,18 @@
 from setuptools import setup, find_packages
-import sys, os
+import sys
 
 version = '0.10.2'
+
+install_requires = [
+    'WebOb',
+    'Tempita',
+    'Pygments',
+    'Paste>=1.7.1',
+    ]
+
+
+if sys.version_info[:2] < (2, 6):
+    install_requires.append('simplejson')
 
 setup(name='WebError',
       version=version,
@@ -29,9 +40,7 @@ setup(name='WebError',
       include_package_data=True,
       package_data = { 'weberror.evalexception': [ "*.html.tmpl", "media/*" ] },
       zip_safe=False,
-      install_requires=[
-        'WebOb', 'Tempita', 'Pygments', 'simplejson', 'Paste>=1.7.1'
-      ],
+      install_requires=install_requires,
       test_suite='nose.collector',
       tests_require=['nose', 'webtest', 'Paste'],
       entry_points="""
