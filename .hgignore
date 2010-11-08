@@ -7,4 +7,5 @@ syntax:glob
 *.egg-info
 ez_setup
 *.egg-info
+*.egg
 test_logger.log
