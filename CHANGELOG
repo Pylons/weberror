@@ -1,6 +1,9 @@
 WebError Changelog
 ==================
 
+0.10.3 (11/9/2010)
+* Don't require simplejson on Python 2.6
+
 0.10.2 (2/12/2010)
 * Fix bug when displaying UTF-8 type errors.
 * Fix bug when emailing data with UTF-8.
