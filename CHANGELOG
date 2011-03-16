@@ -1,40 +1,58 @@
+.. -*-rst-*-
+
 WebError Changelog
 ==================
 
 0.10.3 (11/9/2010)
-* Don't require simplejson on Python 2.6
+------------------
+
+  * Don't require simplejson on Python 2.6
 
 0.10.2 (2/12/2010)
-* Fix bug when displaying UTF-8 type errors.
-* Fix bug when emailing data with UTF-8.
+------------------
+
+  * Fix bug when displaying UTF-8 type errors.
+  * Fix bug when emailing data with UTF-8.
 
 0.10.1 (12/29/2008)
-* Fix view source when __file__ is .pyo or $py.class.
+-------------------
+
+  * Fix view source when __file__ is .pyo or $py.class.
 
 0.10 (12/18/2008)
-* Fix indentation of code lines in the traceback view.
-* Enable syntax highlighting in view source.
-* Fix a case where the response could become unicode; fix the docstring
-  patching when using python -O
+-----------------
+
+  * Fix indentation of code lines in the traceback view.
+  * Enable syntax highlighting in view source.
+  * Fix a case where the response could become unicode; fix the docstring
+    patching when using python -O
 
 0.9.1 (10/28/2008)
-* Python 2.6 compatibility
-* Making main page links more accessible to browsers with no JS on per
-  Pylons Trac ticket #489.
+------------------
+
+  * Python 2.6 compatibility
+  * Making main page links more accessible to browsers with no JS on per
+    Pylons Trac ticket #489.
 
 0.9 (07/08/2008)
-* Switched to using Pygments for highlighting.
-* Added better handling of exceptions that don't cleanly convert to str().
-* Added dependency library listings for XML output.
+----------------
+
+  * Switched to using Pygments for highlighting.
+  * Added better handling of exceptions that don't cleanly convert to str().
+  * Added dependency library listings for XML output.
 
 0.8 (06/12/2008)
-* Added fairly basic pdbcapture system.
-* Fixed errors in unicode handling and exception displaying.
-* Updated JS to use jQuery where applicable. Updated jQuery lib and added
-  jQuery hotkeys plugin.
-* Refactored to a flatter layout.
+----------------
+
+  * Added fairly basic pdbcapture system.
+  * Fixed errors in unicode handling and exception displaying.
+  * Updated JS to use jQuery where applicable. Updated jQuery lib and added
+    jQuery hotkeys plugin.
+  * Refactored to a flatter layout.
 
 0.8a (02/27/2008)
-* Fixed error in email due to restructuring of project.
-* Added xml formattor output.
-* Added try/except in case an objects repr throws an exception.
+-----------------
+
+  * Fixed error in email due to restructuring of project.
+  * Added xml formattor output.
+  * Added try/except in case an objects repr throws an exception.

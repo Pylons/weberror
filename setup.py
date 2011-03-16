@@ -14,11 +14,14 @@ install_requires = [
 if sys.version_info[:2] < (2, 6):
     install_requires.append('simplejson')
 
+README = open('README.rst').read()
+CHANGELOG = open('CHANGELOG').read()
+
+
 setup(name='WebError',
       version=version,
       description="Web Error handling and exception catching",
-      long_description="""\
-""",
+      long_description=README + '\n\n' + CHANGELOG,
       classifiers=[
           "Development Status :: 5 - Production/Stable",
           "Intended Audience :: Developers",
@@ -33,12 +36,12 @@ setup(name='WebError',
       ],
       keywords='wsgi',
       author='Ben Bangert, Ian Bicking, Mark Ramm',
-      author_email='',
-      url='',
+      author_email='invalid@invalid.com',
+      url='https://bitbucket.org/bbangert/weberror',
       license='MIT',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
-      package_data = { 'weberror.evalexception': [ "*.html.tmpl", "media/*" ] },
+      package_data={'weberror.evalexception': ["*.html.tmpl", "media/*"]},
       zip_safe=False,
       install_requires=install_requires,
       test_suite='nose.collector',
