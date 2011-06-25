@@ -123,7 +123,7 @@ class FileReporter(Reporter):
             "You must give a file object")
 
     def report(self, exc_data):
-        text = self.format_text(
+        text, head_text = self.format_text(
             exc_data, show_hidden_frames=self.show_hidden_frames)
         self.file.write(text + '\n' + '-'*60 + '\n')
 

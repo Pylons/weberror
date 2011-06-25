@@ -44,3 +44,37 @@ def test_logger():
     assert len(content.splitlines()) == 8
     assert 'ZeroDivisionError' in content
 
+def test_file():
+    fn = setup_file('test_file.log')
+    f = open(fn, 'w')
+    rep = FileReporter(
+        file=f,
+        show_hidden_frames=False)
+
+    try:
+        int('a')
+    except:
+        exc_data = collector.collect_exception(*sys.exc_info())
+    else:
+        assert 0
+    rep.report(exc_data)
+    f.flush()
+    content = open(fn).read()
+    assert len(content.splitlines()) == 4
+    assert 'ValueError' in content
+    assert 'int' in content
+    assert 'test_reporter.py' in content
+    assert 'test_file' in content
+
+    try:
+        1 / 0
+    except:
+        exc_data = collector.collect_exception(*sys.exc_info())
+    else:
+        assert 0
+    rep.report(exc_data)
+    f.flush()
+    content = open(fn).read()
+    print content
+    assert len(content.splitlines()) == 8
+    assert 'ZeroDivisionError' in content
