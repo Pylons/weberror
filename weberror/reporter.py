@@ -4,6 +4,7 @@
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 import smtplib
+import ssl
 import time
 from weberror import formatter
 
@@ -54,8 +55,8 @@ class EmailReporter(Reporter):
                         self.to_addresses, msg.as_string())
         try:
             server.quit()
-        except sslerror:
-            # sslerror is raised in tls connections on closing sometimes
+        except ssl.SSLError:
+            # SSLError is raised in tls connections on closing sometimes
             pass
 
     def check_params(self):
