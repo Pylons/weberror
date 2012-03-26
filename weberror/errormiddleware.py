@@ -62,8 +62,8 @@ class ErrorMiddleware(object):
           HTML page.
 
       `show_error_reason``:
-          When debug mode is off, exception_type and exception_value
-          are posted after error_message.
+          If set to true and when debug mode is off,
+          exception_type and exception_value are posted after error_message.
 
     Environment Configuration:
     
