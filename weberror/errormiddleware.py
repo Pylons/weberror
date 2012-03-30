@@ -212,7 +212,8 @@ class ErrorMiddleware(object):
             error_subject_prefix=self.error_subject_prefix,
             error_message=self.error_message,
             simple_html_error=simple_html_error,
-            reporters=self.reporters)
+            reporters=self.reporters,
+            show_error_reason=self.show_error_reason)
 
 class ResponseStartChecker(object):
     def __init__(self, start_response):
