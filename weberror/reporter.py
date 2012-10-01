@@ -6,6 +6,7 @@ from email.MIMEMultipart import MIMEMultipart
 import smtplib
 import time
 from weberror import formatter
+from email.utils import formatdate
 
 class Reporter(object):
 
@@ -93,6 +94,7 @@ class EmailReporter(Reporter):
         msg['Subject'] = as_str(self.subject_prefix) + subject
         msg['From'] = as_str(self.from_address)
         msg['To'] = as_str(', '.join(self.to_addresses))
+        msg['Date'] = formatdate()
         return msg
 
 class LogReporter(Reporter):
