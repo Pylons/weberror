@@ -197,6 +197,7 @@ class EvalException(object):
                  xmlhttp_key=None, media_paths=None, 
                  templating_formatters=None, head_html='', footer_html='',
                  reporters=None, libraries=None,
+                 debug_url_prefix=None,
                  **params):
         self.libraries = libraries or []
         self.application = application
@@ -213,6 +214,12 @@ class EvalException(object):
             else:
                 xmlhttp_key = global_conf.get('xmlhttp_key', '_')
         self.xmlhttp_key = xmlhttp_key
+        if debug_url_prefix is None:
+            if global_conf is None:
+                debug_url_prefix = '_debug'
+            else:
+                debug_url_prefix = global_conf.get('debug_url_prefix', '_debug')
+        self.debug_url_prefix = debug_url_prefix
         self.media_paths = media_paths or {}
         self.error_template = HTMLTemplate.from_filename(error_template_filename)
         if reporters is None:
@@ -229,13 +236,14 @@ class EvalException(object):
         environ['weberror.evalexception'] = environ['paste.evalexception'] = \
             self
         req = Request(environ)
-        if req.path_info_peek() == '_debug':
+        if req.path_info.startswith('/'+self.debug_url_prefix):
             return self.debug(req)(environ, start_response)
         else:
             return self.respond(environ, start_response)
 
     def debug(self, req):
-        assert req.path_info_pop() == '_debug'
+        for path_part in self.debug_url_prefix.split('/'):
+            assert req.path_info_pop() == path_part
         next_part = req.path_info_pop()
         method = getattr(self, next_part, None)
         if method is None:
@@ -416,7 +424,7 @@ class EvalException(object):
         req = Request(environ)
         if req.environ.get('paste.throw_errors'):
             return self.application(environ, start_response)
-        base_path = req.application_url + '/_debug'
+        base_path = req.application_url + '/' + self.debug_url_prefix
         req.environ['paste.throw_errors'] = True
         started = []
         def detect_start_response(status, headers, exc_info=None):
