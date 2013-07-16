@@ -61,6 +61,10 @@ class ErrorMiddleware(object):
           response should be more minimal; it should not be a complete
           HTML page.
 
+      `show_error_reason``:
+          If set to true and when debug mode is off,
+          exception_type and exception_value are posted after error_message.
+
     Environment Configuration:
     
       ``paste.throw_errors``:
@@ -93,7 +97,8 @@ class ErrorMiddleware(object):
                  error_subject_prefix=None,
                  error_message=None,
                  xmlhttp_key=None,
-                 reporters=None):
+                 reporters=None,
+                 show_error_reason=None):
         from paste.util import converters
         self.application = application
         # @@: global_conf should be handled elsewhere in a separate
@@ -144,7 +149,11 @@ class ErrorMiddleware(object):
                     reporter = reporter()
                 reporters.append(reporter)
         self.reporters = reporters or []
-            
+
+        if show_error_reason is None:
+            show_error_reason = global_conf.get('show_error_reason')
+        self.show_error_reason = converters.asbool(show_error_reason)
+
     def __call__(self, environ, start_response):
         """
         The WSGI application interface.
@@ -203,7 +212,8 @@ class ErrorMiddleware(object):
             error_subject_prefix=self.error_subject_prefix,
             error_message=self.error_message,
             simple_html_error=simple_html_error,
-            reporters=self.reporters)
+            reporters=self.reporters,
+            show_error_reason=self.show_error_reason)
 
 class ResponseStartChecker(object):
     def __init__(self, start_response):
@@ -350,6 +360,7 @@ def handle_exception(exc_info, error_stream, html=True,
                      error_message=None,
                      simple_html_error=False,
                      reporters=None,
+                     show_error_reason=False
                      ):
     """
     For exception handling outside of a web context
@@ -430,11 +441,21 @@ def handle_exception(exc_info, error_stream, html=True,
             extra_data = ''
             reported = True
         else:
-            msg = error_message or '''
+            default_msg = '''
             An error occurred.  See the error logs for more information.
-            (Turn debug on to display exception reports here)
             '''
-            return_error = error_template('', msg, '')
+            if not show_error_reason:
+                default_msg += '''(Turn debug on to display exception reports here)'''
+
+            msg = error_message or default_msg
+
+            if show_error_reason:
+                extra = "%s - %s" % (exc_data.exception_type, exc_data.exception_value)
+                extra = cgi.escape(extra).encode('ascii', 'xmlcharrefreplace')
+            else:
+                extra = ''
+
+            return_error = error_template('', msg, extra)
     else:
         return_error = None
     if not reported and error_stream:
