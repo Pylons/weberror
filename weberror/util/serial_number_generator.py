@@ -17,6 +17,39 @@ good_characters = "23456789abcdefghjkmnpqrtuvwxyz"
 
 base = len(good_characters)
 
+def lazy_result(return_type, dummy_initial=None):
+    """Decorator to allow for on-demand evaluation (limited scope of use!)"""
+    if not issubclass(return_type, basestring):
+        raise NotImplementedError
+
+    class _lazy_class(return_type):
+        """lazified access to value of %s type""" % return_type.__name__
+        def __new__(self, *args, **kwargs):
+            return super(_lazy_class, self).__new__(self, dummy_initial)
+        def __init__(self, *args, **kwargs):
+            self._args = args
+            self._kwargs = kwargs
+            self._active = Ellipsis
+        def __call__(self, **kwargs):
+            if self._active is Ellipsis:
+                # explicit caller can possibly override keyword arguments
+                kwargs.update(self._kwargs)
+                self._active = self._generator(*self._args, **kwargs)
+            return self._active
+    _lazy_class.__name__ = "lazy_%s" % return_type.__name__
+
+    # not everything implemented (and will never be 100%)
+    _lazy_class.__str__ = lambda self: str(self())
+    _lazy_class.__repr__ = lambda self: repr(self())
+    _lazy_class.__cmp__ = lambda self, other: cmp(self(), other)
+    _lazy_class.__getslice__ = lambda self, **kws: slice(self(), **kws)
+
+    def _generating_lazy_class(generator):
+        _lazy_class._generator = staticmethod(generator)
+        return _lazy_class
+
+    return _generating_lazy_class
+
 def make_identifier(number):
     """
     Encodes a number as an identifier.
@@ -37,6 +70,7 @@ def make_identifier(number):
         number = number / base
     return ''.join(result)
 
+@lazy_result(str)
 def hash_identifier(s, length, pad=True, hasher=md5, prefix='',
                     group=None, upper=False):
     """
@@ -120,4 +154,4 @@ __test__ = {
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-    
+
