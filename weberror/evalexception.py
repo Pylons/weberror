@@ -45,7 +45,7 @@ from paste.util import import_string
 
 import evalcontext
 from weberror import errormiddleware, formatter, collector
-from weberror.util import escaping
+from weberror.util import security
 from tempita import HTMLTemplate
 from webob import Request, Response
 from webob import exc
@@ -163,7 +163,25 @@ def get_debug_info(func):
     debug_info_replacement.exposed = True
     return debug_info_replacement
 
+def check_csrf_token(func):
+    """
+    A decorator to verify that the sender is same-origin with the debug app
+    """
+    def new_fn(self, req):
+        if 'csrf_token' not in req.params:
+            return exc.HTTPForbidden("You must provide a CSRF token")
+
+        csrf_token = req.params['csrf_token']
+        if not security.valid_csrf_token(csrf_secret, csrf_token):
+            return exc.HTTPForbidden("Invalid CSRF token")
+
+        return func(self, req)
+
+    new_fn.exposed = True
+    return new_fn
+
 debug_counter = itertools.count(int(time.time()))
+csrf_secret = security.gen_csrf_secret()
 
 def get_debug_count(req):
     """
@@ -252,35 +270,6 @@ class EvalException(object):
             return exc.HTTPForbidden('Access to %r is forbidden' % next_part)
         return method(req)
     
-    def relay(self, req):
-        """Relay a request to a remote machine for JS proxying"""
-        host = req.GET['host']
-        conn = httplib.HTTPConnection(host)
-        headers = req.headers
-        
-        # Re-assemble the query string
-        query_str = {}
-        for param, val in req.GET.iteritems():
-            if param in ['host', 'path']: continue
-            query_str[param] = val
-        query_str = urllib.urlencode(query_str)
-        
-        # Transport a GET or a POST
-        if req.method == 'GET':
-            conn.request("GET", '%s?%s' % (req.GET['path'], query_str), headers=headers)
-        elif req.method == 'POST':
-            conn.request("POST", req.GET['path'], req.body, headers=headers)
-        
-        # Handle the response and pull out the headers to proxy back
-        resp = conn.getresponse()
-        res = Response()
-        for header, value in resp.getheaders():
-            if header.lower() in ['server', 'date']: continue
-            res.headers[header] = value
-        res.body = resp.read()
-        return res
-    relay.exposed=True
-    
     def post_traceback(self, req):
         """Post the long XML traceback to the host and path provided"""
         debug_info = req.debug_info
@@ -300,7 +289,7 @@ class EvalException(object):
             res.headers[header] = value
         res.body = resp.read()
         return res
-    post_traceback = get_debug_info(post_traceback)
+    post_traceback = check_csrf_token(get_debug_info(post_traceback))
     
     def media(self, req):
         """Static path where images and other files live"""
@@ -387,7 +376,7 @@ class EvalException(object):
                preserve_whitespace(output)))
         return res
 
-    exec_input = get_debug_info(exec_input)
+    exec_input = check_csrf_token(get_debug_info(exec_input))
 
     def source_code(self, req):
         location = req.params['location']
@@ -396,7 +385,7 @@ class EvalException(object):
         if module is None:
             # Something weird indeed
             res = Response(content_type='text/html', charset='utf8')
-            res.body = 'The module <code>%s</code> does not have an entry in sys.modules' % module_name
+            res.unicode_body = 'The module <code>%s</code> does not have an entry in sys.modules' % html_quote(module_name)
             return res
         filename = module.__file__
         if filename[-4:] in ('.pyc', '.pyo'):
@@ -409,7 +398,7 @@ class EvalException(object):
         html = (
             ('<div>Module: <b>%s</b> file: %s</div>'
              '<style type="text/css">%s</style>'
-             % (module_name, filename, formatter.pygments_css))
+             % (html_quote(module_name), html_quote(filename), formatter.pygments_css))
             + formatter.highlight(filename, source, linenos=True))
         source_lines = len(source.splitlines())
         if source_lines < 60:
@@ -583,6 +572,7 @@ class DebugInfo(object):
             template_data=template_data,
             set_tab=tab,
             prefix=self.base_path,
+            csrf_token=security.generate_csrf_token(csrf_secret),
             counter=self.counter,
             )
         return [page]

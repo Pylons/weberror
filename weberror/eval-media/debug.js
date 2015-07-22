@@ -75,7 +75,8 @@ function submitInput(button, tbid) {
     var vars = {
         tbid: tbid,
         debugcount: debug_count,
-        input: input.value
+        input: input.value,
+        csrf_token: csrf_token
     };
     showElement(output);
     callbackXHR(url, vars, function (data) {
