@@ -3,6 +3,12 @@
 WebError Changelog
 ==================
 
+0.11 (07/21/2015)
+-----------------
+
+  * Remove XSS issues by requiring a CSRF token for relay commands. Patch by
+    Jordan Milne.
+
 0.10.3 (11/9/2010)
 ------------------
 
