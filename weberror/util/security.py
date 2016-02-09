@@ -51,4 +51,4 @@ def valid_csrf_token(secret, token):
 
     expected = hmac.new(secret, expiry_ts, hashlib.sha256).hexdigest()
 
-    return constant_time_compare(hashed, expected)
+    return constant_time_compare(str(hashed), expected)
