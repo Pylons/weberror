@@ -3,6 +3,12 @@
 WebError Changelog
 ==================
 
+0.12 (08/02/2016)
+-----------------
+
+  * Fixed an CSRF verification error when the token was of type unicode. See:
+    https://github.com/Pylons/weberror/pull/11
+
 0.11 (07/21/2015)
 -----------------
 
