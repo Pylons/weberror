@@ -9,3 +9,6 @@ dist/
 .tox
 nosetests.xml
 pyramid_jinja2/coverage.xml
+build/
+tests/reporter_output/test_file.log
+tests/reporter_output/test_logger.log
