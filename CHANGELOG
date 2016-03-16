@@ -3,6 +3,13 @@
 WebError Changelog
 ==================
 
+0.13 (15/03/2016)
+-----------------
+
+  * Fixed an issue with the debug view detection that was causing failures
+    when WebError was used with pyramid_debugtoolbar. See:
+    https://github.com/Pylons/weberror/pull/14
+
 0.12 (08/02/2016)
 -----------------
 
