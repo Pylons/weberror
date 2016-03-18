@@ -254,7 +254,7 @@ class EvalException(object):
         environ['weberror.evalexception'] = environ['paste.evalexception'] = \
             self
         req = Request(environ)
-        req_path = req.path_info.split('/')[1:len(self.debug_url_prefix + 1)]
+        req_path = req.path_info.split('/')[1:len(self.debug_url_prefix) + 1]
         if req_path == self.debug_url_prefix:
             return self.debug(req)(environ, start_response)
         else:
