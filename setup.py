@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import sys
 
-version = '0.13'
+version = '0.13.1'
 
 install_requires = [
     'WebOb',

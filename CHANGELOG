@@ -3,6 +3,12 @@
 WebError Changelog
 ==================
 
+0.13.1 (09/04/2016)
+-------------------
+
+  * Fixed an +1 issues with the fix in pull request #14 breaking the previous
+    version. This was fixed in https://github.com/Pylons/weberror/pull/16
+
 0.13 (15/03/2016)
 -----------------
 
