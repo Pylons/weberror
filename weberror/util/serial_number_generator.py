@@ -7,6 +7,11 @@ avoiding ambiguous numbers and letters.  hash_identifier can be used
 to create compact representations that are unique for a certain string
 (or concatenation of strings)
 """
+from __future__ import division
+from past.builtins import cmp
+from builtins import str
+from past.builtins import basestring
+from past.utils import old_div
 
 try:
     from hashlib import md5
@@ -19,7 +24,7 @@ base = len(good_characters)
 
 def lazy_result(return_type, dummy_initial=None):
     """Decorator to allow for on-demand evaluation (limited scope of use!)"""
-    if not issubclass(return_type, basestring):
+    if not issubclass(return_type, str):
         raise NotImplementedError
 
     class _lazy_class(return_type):
@@ -54,7 +59,7 @@ def make_identifier(number):
     """
     Encodes a number as an identifier.
     """
-    if not isinstance(number, (int, long)):
+    if not isinstance(number, int):
         raise ValueError(
             "You can only make identifiers out of integers (not %r)"
             % number)
@@ -67,7 +72,7 @@ def make_identifier(number):
         next = number % base
         result.append(good_characters[next])
         # Note, this depends on integer rounding of results:
-        number = number / base
+        number = old_div(number, base)
     return ''.join(result)
 
 @lazy_result(str)
@@ -90,10 +95,10 @@ def hash_identifier(s, length, pad=True, hasher=md5, prefix='',
         # Accept sha/md5 modules as well as callables
         hasher = hasher.new
     if length > 26 and hasher is md5:
-        raise ValueError, (
+        raise ValueError(
             "md5 cannot create hashes longer than 26 characters in "
             "length (you gave %s)" % length)
-    if isinstance(s, unicode):
+    if isinstance(s, str):
         s = s.encode('utf-8')
     h = hasher(str(s))
     bin_hash = h.digest()

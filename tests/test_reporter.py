@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import division
 import sys
 import os
 from weberror.reporter import *
@@ -40,7 +42,7 @@ def test_logger():
         assert 0
     rep.report(exc_data)
     content = open(fn).read()
-    print content
+    print(content)
     assert len(content.splitlines()) == 8
     assert 'ZeroDivisionError' in content
 
@@ -75,6 +77,6 @@ def test_file():
     rep.report(exc_data)
     f.flush()
     content = open(fn).read()
-    print content
+    print(content)
     assert len(content.splitlines()) == 8
     assert 'ZeroDivisionError' in content

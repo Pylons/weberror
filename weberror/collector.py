@@ -19,14 +19,19 @@
 An exception collector that finds traceback information plus
 supplements
 """
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
 
 import sys
 import traceback
 import time
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 import linecache
 from weberror.util import source_encoding, serial_number_generator
 
@@ -282,7 +287,7 @@ class ExceptionCollector(object):
         if '__traceback_supplement__' in locals:
             # Use the supplement defined in the function.
             tbs = locals['__traceback_supplement__']
-        elif globals.has_key('__traceback_supplement__'):
+        elif '__traceback_supplement__' in globals:
             # Use the supplement defined in the module.
             # This is used by Scripts (Python).
             tbs = globals['__traceback_supplement__']
@@ -295,7 +300,7 @@ class ExceptionCollector(object):
                 supp = factory(*args)
                 data['supplement'] = self.collectSupplement(supp, tb)
                 if data['supplement'].extra:
-                    for key, value in data['supplement'].extra.items():
+                    for key, value in list(data['supplement'].extra.items()):
                         extra_data.setdefault(key, []).append(value)
             except:
                 if DEBUG_EXCEPTION_FORMATTER:
@@ -380,7 +385,7 @@ class ExceptionCollector(object):
             return str(obj)
         except UnicodeEncodeError:
             try:
-                return unicode(obj).encode(FALLBACK_ENCODING, 'replace')
+                return str(obj).encode(FALLBACK_ENCODING, 'replace')
             except UnicodeEncodeError:
                 # This is when something is really messed up, but this can
                 # happen when the __str__ of an object has to handle unicode
@@ -401,14 +406,14 @@ class Bunch(object):
     """
 
     def __init__(self, **attrs):
-        for name, value in attrs.items():
+        for name, value in list(attrs.items()):
             setattr(self, name, value)
 
     def __repr__(self):
         name = '<%s ' % self.__class__.__name__
         try:
             name += ' '.join(['%s=%r' % (name, str(value)[:30])
-                              for name, value in self.__dict__.items()
+                              for name, value in list(self.__dict__.items())
                               if not name.startswith('_')])
         except:
             name += ' UNABLE TO GET REPRESENTATION'

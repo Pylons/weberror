@@ -4,13 +4,20 @@
 """
 Error handler middleware
 """
+from future import standard_library
+standard_library.install_aliases()
+from builtins import next
+from builtins import str
+from builtins import range
+from past.builtins import basestring
+from builtins import object
 import sys
 import traceback
 import cgi
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 from weberror import formatter, collector, reporter
 from paste import wsgilib
 from paste import request
@@ -145,7 +152,7 @@ class ErrorMiddleware(object):
             reporters = []
             for reporter_string in reporter_strings:
                 reporter = import_string.eval_import(reporter_string)
-                if isinstance(reporter, (type, types.ClassType)):
+                if isinstance(reporter, type):
                     reporter = reporter()
                 reporters.append(reporter)
         self.reporters = reporters or []
@@ -178,7 +185,7 @@ class ErrorMiddleware(object):
                                exc_info)
                 # @@: it would be nice to deal with bad content types here
                 response = self.exception_handler(exc_info, environ)
-                if isinstance(response, unicode):
+                if isinstance(response, str):
                     response = response.encode('utf8')
                 return [response]
             finally:
@@ -243,13 +250,13 @@ class CatchingIter(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         __traceback_supplement__ = (
             Supplement, self.error_middleware, self.environ)
         if self.closed:
             raise StopIteration
         try:
-            return self.app_iterator.next()
+            return next(self.app_iterator)
         except StopIteration:
             self.closed = True
             close_response = self._close()
@@ -316,7 +323,7 @@ class Supplement(object):
                      'wsgi.multithread', 'wsgi.multiprocess',
                      'wsgi.run_once', 'wsgi.version',
                      'wsgi.url_scheme']
-        for name, value in self.environ.items():
+        for name, value in list(self.environ.items()):
             if name.upper() == name:
                 if value:
                     cgi_vars[name] = value
