@@ -22,18 +22,26 @@ to see the full debuggable traceback.  Also, this URL is printed to
 ``wsgi.errors``, so you can open it up in another browser window.
 
 """
-import httplib
+from __future__ import absolute_import
+from past.builtins import cmp
+from future import standard_library
+standard_library.install_aliases()
+from builtins import next
+from builtins import str
+from past.builtins import basestring
+from builtins import object
+import http.client
 import sys
 import os
 import cgi
 import traceback
-from cStringIO import StringIO
+from io import StringIO
 import pprint
 import itertools
 import time
 import re
 import types
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from pkg_resources import resource_filename
 
@@ -43,7 +51,7 @@ from paste import request
 from paste import urlparser
 from paste.util import import_string
 
-import evalcontext
+from . import evalcontext
 from weberror import errormiddleware, formatter, collector
 from weberror.util import security
 from tempita import HTMLTemplate
@@ -124,7 +132,7 @@ def wsgiapp():
                 form['environ'] = environ
                 try:
                     res = func(*args, **form.mixed())
-                except ValueError, ve:
+                except ValueError as ve:
                     status = '500 Server Error'
                     res = '<html>There was an error: %s</html>' % \
                         html_quote(ve)
@@ -150,7 +158,7 @@ def get_debug_info(func):
         debugcount = req.params['debugcount']
         try:
             debugcount = int(debugcount)
-        except ValueError, e:
+        except ValueError as e:
             return exc.HTTPBadRequest(
                 "Invalid value for debugcount (%r): %s"
                 % (debugcount, e))
@@ -197,7 +205,7 @@ def get_debug_count(req):
     elif 'weberror.evalexception.debug_count' in environ:
         return environ['weberror.evalexception.debug_count']
     else:
-        next = debug_counter.next()
+        next = next(debug_counter)
         environ['weberror.evalexception.debug_count'] = next
         environ['paste.evalexception.debug_count'] = next
         return next
@@ -239,7 +247,7 @@ class EvalException(object):
                 debug_url_prefix = global_conf.get('debug_url_prefix', '_debug')
         self.debug_url_prefix = debug_url_prefix.split('/')
         self.media_paths = media_paths or {}
-        self.error_template = HTMLTemplate.from_filename(error_template_filename)
+        self.error_template = HTMLTemplate.from_filename(error_template_filename, encoding='utf-8')
         if reporters is None:
             reporters = []
         self.reporters = reporters
@@ -279,7 +287,7 @@ class EvalException(object):
             libraries=self.libraries)[0]
         host = req.GET['host']
         headers = req.headers
-        conn = httplib.HTTPConnection(host)
+        conn = http.client.HTTPConnection(host)
         headers = {'Content-Length':len(long_xml_er), 
                    'Content-Type':'application/xml'}
         conn.request("POST", req.GET['path'], long_xml_er, headers=headers)
@@ -311,7 +319,7 @@ class EvalException(object):
         """
         res = Response(content_type='text/x-json')
         data = [];
-        items = self.debug_infos.values()
+        items = list(self.debug_infos.values())
         items.sort(lambda a, b: cmp(a.created, b.created))
         data = [item.json() for item in items]
         res.body = repr(data)
@@ -525,7 +533,7 @@ class DebugInfo(object):
             if id(frame) == tbid:
                 return frame
         else:
-            raise ValueError, (
+            raise ValueError(
                 "No frame by id %s found from %r" % (tbid, self.frames))
 
     def wsgi_application(self, environ, start_response):
@@ -601,7 +609,7 @@ class EvalHTMLFormatter(formatter.HTMLFormatter):
 
 def make_table(items):
     if hasattr(items, 'items'):
-        items = items.items()
+        items = list(items.items())
         items.sort()
     return table_template.substitute(
         html_quote=html_quote,
@@ -641,7 +649,7 @@ def pprint_format(value, safe=False):
     out = StringIO()
     try:
         pprint.pprint(value, out)
-    except Exception, e:
+    except Exception as e:
         if safe:
             out.write('Error: %s' % e)
         else:
@@ -786,7 +794,7 @@ def make_eval_exception(app, global_conf, xmlhttp_key=None, reporters=None):
         reporters = []
         for reporter_string in reporter_strings:
             reporter = import_string.eval_import(reporter_string)
-            if isinstance(reporter, (type, types.ClassType)):
+            if isinstance(reporter, type):
                 reporter = reporter()
             reporters.append(reporter)
     return EvalException(app, xmlhttp_key=xmlhttp_key, reporters=reporters)

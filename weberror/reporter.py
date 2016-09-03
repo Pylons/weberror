@@ -1,8 +1,10 @@
+from builtins import str
+from builtins import object
 # (c) 2005 Ian Bicking and contributors; written for Paste (http://pythonpaste.org)
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import smtplib
 import ssl
 import time
@@ -12,7 +14,7 @@ from email.utils import formatdate
 class Reporter(object):
 
     def __init__(self, **conf):
-        for name, value in conf.items():
+        for name, value in list(conf.items()):
             if not hasattr(self, name):
                 raise TypeError(
                     "The keyword argument %s was not expected"
@@ -65,7 +67,7 @@ class EmailReporter(Reporter):
             raise ValueError("You must set to_addresses")
         if not self.from_address:
             raise ValueError("You must set from_address")
-        if isinstance(self.to_addresses, (str, unicode)):
+        if isinstance(self.to_addresses, (str, str)):
             self.to_addresses = [self.to_addresses]
 
     def assemble_email(self, exc_data):
@@ -142,8 +144,8 @@ class WSGIAppReporter(Reporter):
 def as_str(v):
     if isinstance(v, str):
         return v
-    if not isinstance(v, unicode):
-        v = unicode(v)
-    if isinstance(v, unicode):
+    if not isinstance(v, str):
+        v = str(v)
+    if isinstance(v, str):
         v = v.encode('utf8')
     return v

@@ -1,3 +1,4 @@
+from builtins import str
 from webtest import TestApp, lint
 from weberror.errormiddleware import ErrorMiddleware
 from paste.util.quoting import strip_html

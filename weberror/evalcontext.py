@@ -1,4 +1,7 @@
-from cStringIO import StringIO
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
+from io import StringIO
 import traceback
 import threading
 import pdb
@@ -32,7 +35,7 @@ class EvalContext(object):
             sys.stdout = out
             try:
                 code = compile(s, '<web>', "single", 0, 1)
-                exec code in self.namespace, self.globs
+                exec(code, self.namespace, self.globs)
                 debugger.set_continue()
             except KeyboardInterrupt:
                 raise

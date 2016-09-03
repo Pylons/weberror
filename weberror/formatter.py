@@ -4,6 +4,13 @@
 """
 Formatters for the exception data that comes from ExceptionCollector.
 """
+from __future__ import division
+from builtins import str
+from builtins import map
+from builtins import range
+from past.builtins import basestring
+from past.utils import old_div
+from builtins import object
 # @@: TODO:
 # Use this: http://www.zope.org/Members/tino/VisualTraceback/VisualTracebackNews
 
@@ -63,7 +70,7 @@ class AbstractFormatter(object):
     def format_collected_data(self, exc_data):
         general_data = {}
         if self.show_extra_data:
-            for name, value_list in exc_data.extra_data.items():
+            for name, value_list in list(exc_data.extra_data.items()):
                 if isinstance(name, tuple):
                     importance, title = name
                 else:
@@ -123,10 +130,10 @@ class AbstractFormatter(object):
             exc_data.exception_value)
         data_by_importance = {'important': [], 'normal': [],
                               'supplemental': [], 'extra': []}
-        for (importance, name), value in general_data.items():
+        for (importance, name), value in list(general_data.items()):
             data_by_importance[importance].append(
                 (name, value))
-        for value in data_by_importance.values():
+        for value in list(data_by_importance.values()):
             value.sort()
         return self.format_combine(data_by_importance, lines, exc_info)
 
@@ -215,7 +222,7 @@ class AbstractFormatter(object):
 class TextFormatter(AbstractFormatter):
 
     def quote(self, s):
-        if isinstance(s, str) and hasattr(self, 'frame'):
+        if isinstance(s, bytes) and hasattr(self, 'frame'):
             s = s.decode(self.frame.source_encoding, 'replace')
         return s.encode('latin1', 'htmlentityreplace')
     def quote_long(self, s):
@@ -269,12 +276,12 @@ class TextFormatter(AbstractFormatter):
                 return '%s: %s' % (title, s)
         elif isinstance(value, dict):
             lines = ['\n', title, '-'*len(title)]
-            items = value.items()
+            items = list(value.items())
             items.sort()
             for n, v in items:
                 try:
                     v = repr(v)
-                except Exception, e:
+                except Exception as e:
                     v = 'Cannot display: %s' % e
                 v = truncate(v)
                 lines.append('  %s: %s' % (n, v))
@@ -290,7 +297,7 @@ class TextFormatter(AbstractFormatter):
 class HTMLFormatter(TextFormatter):
 
     def quote(self, s):
-        if isinstance(s, str) and hasattr(self, 'frame'):
+        if isinstance(s, bytes) and hasattr(self, 'frame'):
             s = s.decode(self.frame.source_encoding, 'replace')
         s = s.encode('latin1', 'htmlentityreplace')
         return html_quote(s)
@@ -346,7 +353,7 @@ class HTMLFormatter(TextFormatter):
         elif (isinstance(value, (list, tuple))
               and self.long_item_list(value)):
             return '%s: <tt>[<br>\n&nbsp; &nbsp; %s]</tt>' % (
-                title, ',<br>&nbsp; &nbsp; '.join(map(self.quote, map(repr, value))))
+                title, ',<br>&nbsp; &nbsp; '.join(map(self.quote, list(map(repr, value)))))
         else:
             return '%s: <tt>%s</tt>' % (title, self.quote(repr(value)))
 
@@ -370,7 +377,7 @@ class HTMLFormatter(TextFormatter):
 
     def zebra_table(self, title, rows, table_class="variables"):
         if isinstance(rows, dict):
-            rows = rows.items()
+            rows = list(rows.items())
             rows.sort()
         table = ['<table class="%s">' % table_class,
                  '<tr class="header"><th colspan="2">%s</th></tr>'
@@ -379,7 +386,7 @@ class HTMLFormatter(TextFormatter):
         for name, value in rows:
             try:
                 value = repr(value)
-            except Exception, e:
+            except Exception as e:
                 value = 'Cannot print: %s' % e
             odd = not odd
             table.append(
@@ -449,7 +456,7 @@ class XMLFormatter(AbstractFormatter):
         libs = get_libraries(self.extra_kwargs.get('libraries'))
         if libs:
             libraries = newdoc.createElement('libraries')
-            for k, v in libs.iteritems():
+            for k, v in libs.items():
                 lib = newdoc.createElement('library')
                 lib.attributes['version'] = v
                 lib.attributes['name'] = k
@@ -578,7 +585,7 @@ def str2html(src, strip=False, indent_subsequent=0,
                          highlight_inner=highlight_inner, frame=frame,
                          filename=filename)
     except:
-        if isinstance(src, str) and frame:
+        if isinstance(src, bytes) and frame:
             src = src.decode(frame.source_encoding, 'replace')
             src = src.encode('latin1', 'htmlentityreplace')
             return src
@@ -599,11 +606,11 @@ def _str2html(src, strip=False, indent_subsequent=0,
         if src.strip().startswith('<div class="highlight">') and \
                 src.strip().endswith('</div>'):
             src = src.strip()[len('<div class="highlight">'):-len('</div>')]
-        if isinstance(src, str) and frame:
+        if isinstance(src, bytes) and frame:
             src = src.decode(frame.source_encoding, 'replace')
             src = src.encode('latin1', 'htmlentityreplace')
     except:
-        if isinstance(src, str) and frame:
+        if isinstance(src, bytes) and frame:
             src = src.decode(frame.source_encoding, 'replace')
             src = src.encode('latin1', 'htmlentityreplace')
         else:
@@ -616,7 +623,7 @@ def _str2html(src, strip=False, indent_subsequent=0,
     indent = ' '*indent_subsequent
     for i in range(1, len(lines)):
         lines[i] = indent+lines[i]
-        if highlight_inner and i == len(lines)/2:
+        if highlight_inner and i == old_div(len(lines),2):
             lines[i] = '<span class="source-highlight">%s</span>' % lines[i]
     src = '<br>\n'.join(lines)
     src = whitespace_re.sub(
@@ -677,6 +684,6 @@ def make_pre_wrappable(html, wrap_limit=60,
     return '\n'.join(lines)
 
 def convert_to_str(s):
-    if isinstance(s, unicode):
+    if isinstance(s, str):
         return s.encode('utf8')
     return s

@@ -1,3 +1,6 @@
+from builtins import next
+from builtins import object
+from future.utils import raise_
 from webob import Request, Response
 import threading
 from paste.util import threadedprint
@@ -50,7 +53,7 @@ class PdbCapture(object):
                 return self.media_app(environ, start_response)
             resp = self.internal_request(req)
             return resp(environ, start_response)
-        id = self.counter.next()
+        id = next(self.counter)
         state = dict(id=id,
                      event=threading.Event(),
                      base_url=req.application_url,
@@ -66,7 +69,7 @@ class PdbCapture(object):
             resp = state['response']
             return resp(environ, start_response)
         if 'exc_info' in state:
-            raise state['exc_info'][0], state['exc_info'][1], state['exc_info'][2]
+            raise_(state['exc_info'][0], state['exc_info'][1], state['exc_info'][2])
         self.states[id] = state
         tmpl = self.get_template('pdbcapture_response.html')
         body = tmpl.substitute(req=req, state=state, id=id)

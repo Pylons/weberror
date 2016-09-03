@@ -1,3 +1,7 @@
+from __future__ import print_function
+from builtins import range
+from past.builtins import basestring
+from builtins import object
 from weberror import formatter, collector
 import sys
 import os
@@ -6,7 +10,7 @@ import re
 
 class Mock(object):
     def __init__(self, **kw):
-        for name, value in kw.items():
+        for name, value in list(kw.items()):
             setattr(self, name, value)
 
 class Supplement(Mock):
@@ -73,7 +77,7 @@ def test_content():
             raise_error()
         except:
             result = format(f)
-            print result
+            print(result)
             assert 'test_object' in result
             assert 'http://whatever.com' in result
             assert 'This is some supplemental information' in result
@@ -102,7 +106,7 @@ def test_hide():
             hide(True, raise_error)
         except:
             result = format(f)
-            print result
+            print(result)
             assert 'in hide_inner' not in result
             assert 'inner(*args, **kw)' not in result
         else:
@@ -111,7 +115,7 @@ def test_hide():
 def print_diff(s1, s2):
     differ = difflib.Differ()
     result = list(differ.compare(s1.splitlines(), s2.splitlines()))
-    print '\n'.join(result)
+    print('\n'.join(result))
 
 def test_hide_supppressed():
     # When an error occurs and __traceback_stop__ is true for the
@@ -167,7 +171,7 @@ def test_hide_before():
                 raise_error)
         except:
             result = format(f)
-            print result
+            print(result)
             assert 'AABB' not in result
             assert 'raise_error' in result
         else:

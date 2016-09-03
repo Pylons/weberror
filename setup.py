@@ -1,9 +1,10 @@
 from setuptools import setup, find_packages
 import sys
 
-version = '0.13.1'
+version = '0.13.2'
 
 install_requires = [
+    'future',
     'WebOb',
     'Tempita',
     'Pygments',
