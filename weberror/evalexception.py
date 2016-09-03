@@ -247,7 +247,7 @@ class EvalException(object):
                 debug_url_prefix = global_conf.get('debug_url_prefix', '_debug')
         self.debug_url_prefix = debug_url_prefix.split('/')
         self.media_paths = media_paths or {}
-        self.error_template = HTMLTemplate.from_filename(error_template_filename)
+        self.error_template = HTMLTemplate.from_filename(error_template_filename, encoding='utf-8')
         if reporters is None:
             reporters = []
         self.reporters = reporters
