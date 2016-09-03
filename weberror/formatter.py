@@ -222,7 +222,7 @@ class AbstractFormatter(object):
 class TextFormatter(AbstractFormatter):
 
     def quote(self, s):
-        if isinstance(s, str) and hasattr(self, 'frame'):
+        if isinstance(s, bytes) and hasattr(self, 'frame'):
             s = s.decode(self.frame.source_encoding, 'replace')
         return s.encode('latin1', 'htmlentityreplace')
     def quote_long(self, s):
@@ -297,7 +297,7 @@ class TextFormatter(AbstractFormatter):
 class HTMLFormatter(TextFormatter):
 
     def quote(self, s):
-        if isinstance(s, str) and hasattr(self, 'frame'):
+        if isinstance(s, bytes) and hasattr(self, 'frame'):
             s = s.decode(self.frame.source_encoding, 'replace')
         s = s.encode('latin1', 'htmlentityreplace')
         return html_quote(s)
@@ -585,7 +585,7 @@ def str2html(src, strip=False, indent_subsequent=0,
                          highlight_inner=highlight_inner, frame=frame,
                          filename=filename)
     except:
-        if isinstance(src, str) and frame:
+        if isinstance(src, bytes) and frame:
             src = src.decode(frame.source_encoding, 'replace')
             src = src.encode('latin1', 'htmlentityreplace')
             return src
@@ -606,11 +606,11 @@ def _str2html(src, strip=False, indent_subsequent=0,
         if src.strip().startswith('<div class="highlight">') and \
                 src.strip().endswith('</div>'):
             src = src.strip()[len('<div class="highlight">'):-len('</div>')]
-        if isinstance(src, str) and frame:
+        if isinstance(src, bytes) and frame:
             src = src.decode(frame.source_encoding, 'replace')
             src = src.encode('latin1', 'htmlentityreplace')
     except:
-        if isinstance(src, str) and frame:
+        if isinstance(src, bytes) and frame:
             src = src.decode(frame.source_encoding, 'replace')
             src = src.encode('latin1', 'htmlentityreplace')
         else:

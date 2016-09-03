@@ -382,7 +382,7 @@ class ExceptionCollector(object):
 
     def safeStr(self, obj):
         try:
-            return str(obj)
+            return str(obj).encode()
         except UnicodeEncodeError:
             try:
                 return str(obj).encode(FALLBACK_ENCODING, 'replace')

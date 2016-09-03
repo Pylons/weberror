@@ -429,8 +429,8 @@ def handle_exception(exc_info, error_stream, html=True,
         else:
             reported = True
     else:
-        error_stream.write('Error - %s: %s\n' % (
-            exc_data.exception_type, exc_data.exception_value))
+        error_stream.write(('Error - %s: %s\n' % (
+            exc_data.exception_type, exc_data.exception_value)).encode('utf-8'))
     if html:
         if debug_mode and simple_html_error:
             return_error = formatter.format_html(
@@ -468,9 +468,9 @@ def handle_exception(exc_info, error_stream, html=True,
     if not reported and error_stream:
         err_report = formatter.format_text(exc_data, show_hidden_frames=True)[0]
         err_report += '\n' + '-'*60 + '\n'
-        error_stream.write(err_report)
+        error_stream.write(err_report.encode('utf-8'))
     if extra_data:
-        error_stream.write(extra_data)
+        error_stream.write(extra_data.encode('utf-8'))
     return return_error
 
 def send_report(rep, exc_data, html=True):
