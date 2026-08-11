@@ -1,6 +1,6 @@
 import calendar
 from datetime import datetime, timedelta
-import os
+import os, sys
 
 import hashlib
 import hmac
@@ -21,8 +21,12 @@ else:
         expected_len = len(expected)
         result = actual_len ^ expected_len
         if expected_len > 0:
-            for i in xrange(actual_len):
-                result |= ord(actual[i]) ^ ord(expected[i % expected_len])
+            if sys.version_info[:2] < (3, 0):
+                for i in xrange(actual_len):
+                    result |= ord(actual[i]) ^ ord(expected[i % expected_len])
+            else:
+                for i in range(actual_len):
+                    result |= ord(actual[i]) ^ ord(expected[i % expected_len])
         return result == 0
 
 
@@ -43,7 +47,7 @@ def valid_csrf_token(secret, token):
     try:
         expiry_ts, hashed = token.split(',')
         expiry_dt = datetime.utcfromtimestamp(int(expiry_ts))
-    except ValueError, e:
+    except ValueError as e:
         return False
 
     if expiry_dt < datetime.utcnow():

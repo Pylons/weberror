@@ -22,12 +22,10 @@ to see the full debuggable traceback.  Also, this URL is printed to
 ``wsgi.errors``, so you can open it up in another browser window.
 
 """
-import httplib
 import sys
 import os
 import cgi
 import traceback
-from cStringIO import StringIO
 import pprint
 import itertools
 import time
@@ -43,12 +41,20 @@ from paste import request
 from paste import urlparser
 from paste.util import import_string
 
-import evalcontext
 from weberror import errormiddleware, formatter, collector
 from weberror.util import security
 from tempita import HTMLTemplate
 from webob import Request, Response
 from webob import exc
+
+if sys.version_info[:2] < (3, 0):
+    import httplib as httplib
+    from cStringIO import StringIO
+    import evalcontext
+else:
+    import http.client as httplib
+    from io import StringIO
+    from . import evalcontext
 
 limit = 200
 
@@ -124,7 +130,7 @@ def wsgiapp():
                 form['environ'] = environ
                 try:
                     res = func(*args, **form.mixed())
-                except ValueError, ve:
+                except ValueError as ve:
                     status = '500 Server Error'
                     res = '<html>There was an error: %s</html>' % \
                         html_quote(ve)
@@ -150,7 +156,7 @@ def get_debug_info(func):
         debugcount = req.params['debugcount']
         try:
             debugcount = int(debugcount)
-        except ValueError, e:
+        except ValueError as e:
             return exc.HTTPBadRequest(
                 "Invalid value for debugcount (%r): %s"
                 % (debugcount, e))
@@ -525,7 +531,7 @@ class DebugInfo(object):
             if id(frame) == tbid:
                 return frame
         else:
-            raise ValueError, (
+            raise ValueError(
                 "No frame by id %s found from %r" % (tbid, self.frames))
 
     def wsgi_application(self, environ, start_response):
@@ -641,7 +647,7 @@ def pprint_format(value, safe=False):
     out = StringIO()
     try:
         pprint.pprint(value, out)
-    except Exception, e:
+    except Exception as e:
         if safe:
             out.write('Error: %s' % e)
         else:

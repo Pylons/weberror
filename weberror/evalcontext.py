@@ -1,8 +1,12 @@
-from cStringIO import StringIO
 import traceback
 import threading
 import pdb
 import sys
+
+if sys.version_info[:2] < (3, 0):
+    from cStringIO import StringIO
+else:
+    from io import StringIO
 
 exec_lock = threading.Lock()
 
@@ -32,7 +36,7 @@ class EvalContext(object):
             sys.stdout = out
             try:
                 code = compile(s, '<web>', "single", 0, 1)
-                exec code in self.namespace, self.globs
+                exec(code in self.namespace, self.globs)
                 debugger.set_continue()
             except KeyboardInterrupt:
                 raise

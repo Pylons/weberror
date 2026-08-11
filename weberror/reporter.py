@@ -1,13 +1,20 @@
 # (c) 2005 Ian Bicking and contributors; written for Paste (http://pythonpaste.org)
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
 import smtplib
 import ssl
 import time
 from weberror import formatter
 from email.utils import formatdate
+import sys
+
+if sys.version_info[:2] < (3, 0):
+    from email.MIMEText import MIMEText
+    from email.MIMEMultipart import MIMEMultipart
+else:
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
 
 class Reporter(object):
 
@@ -142,8 +149,9 @@ class WSGIAppReporter(Reporter):
 def as_str(v):
     if isinstance(v, str):
         return v
-    if not isinstance(v, unicode):
-        v = unicode(v)
-    if isinstance(v, unicode):
-        v = v.encode('utf8')
+    if sys.version_info[:2] < (3, 0):
+        if not isinstance(v, unicode):
+            v = unicode(v)
+        if isinstance(v, unicode):
+            v = v.encode('utf8')
     return v

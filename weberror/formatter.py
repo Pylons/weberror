@@ -274,7 +274,7 @@ class TextFormatter(AbstractFormatter):
             for n, v in items:
                 try:
                     v = repr(v)
-                except Exception, e:
+                except Exception as e:
                     v = 'Cannot display: %s' % e
                 v = truncate(v)
                 lines.append('  %s: %s' % (n, v))
@@ -379,7 +379,7 @@ class HTMLFormatter(TextFormatter):
         for name, value in rows:
             try:
                 value = repr(value)
-            except Exception, e:
+            except Exception as e:
                 value = 'Cannot print: %s' % e
             odd = not odd
             table.append(
@@ -449,7 +449,7 @@ class XMLFormatter(AbstractFormatter):
         libs = get_libraries(self.extra_kwargs.get('libraries'))
         if libs:
             libraries = newdoc.createElement('libraries')
-            for k, v in libs.iteritems():
+            for k, v in libs.items():
                 lib = newdoc.createElement('library')
                 lib.attributes['version'] = v
                 lib.attributes['name'] = k
@@ -484,7 +484,7 @@ class XMLFormatter(AbstractFormatter):
             # @@@ TODO: Put in a way to optionally toggle including variables
             # variables = newdoc.createElement('variables')
             # xml_frame.appendChild(variables)
-            # for name, value in frame.locals.iteritems():
+            # for name, value in frame.locals.items():
             #     if isinstance(value, unicode):
             #         value = value.encode('ascii', 'xmlcharrefreplace')
             #     variable = newdoc.createElement('variable')
@@ -493,8 +493,12 @@ class XMLFormatter(AbstractFormatter):
             #     variables.appendChild(variable)
         
         etype = exc_data.exception_type
-        if not isinstance(etype, basestring):
-            etype = etype.__name__
+        if sys.version_info[:2] < (3, 0):
+            if not isinstance(etype, basestring):
+                etype = etype.__name__
+        else:
+            if not isinstance(etype, str):
+                etype = etype.__name__
         
         top_element.appendChild(self.format_exception_info(
             etype, exc_data.exception_value, newdoc, frame))

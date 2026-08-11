@@ -6,8 +6,13 @@
 # the MIT License: http://www.opensource.org/licenses/mit-license.php
 
 
-import re, cgi, urllib, htmlentitydefs, codecs
-from StringIO import StringIO
+import sys, re, cgi, urllib, codecs
+if sys.version_info[:2] < (3, 0):
+    from cStringIO import StringIO
+    import htmlentitydefs
+else:
+    from io import StringIO
+    import html.entities as htmlentitydefs
 
 xml_escapes = {
     '&' : '&amp;',
@@ -43,12 +48,15 @@ def trim(string):
 class Decode(object):
     def __getattr__(self, key):
         def decode(x):
-            if isinstance(x, unicode):
-                return x
-            elif not isinstance(x, str):
-                return unicode(str(x), encoding=key)
+            if sys.version_info[:2] < (3, 0):
+                if isinstance(x, unicode):
+                    return x
+                elif not isinstance(x, str):
+                    return unicode(str(x), encoding=key)
+                else:
+                    return unicode(x, encoding=key)
             else:
-                return unicode(x, encoding=key)
+                return str(x).encode(key)
         return decode
 decode = Decode()
        
@@ -63,7 +71,7 @@ def is_ascii_str(text):
 class XMLEntityEscaper(object):
     def __init__(self, codepoint2name, name2codepoint):
         self.codepoint2entity = dict([(c, u'&%s;' % n)
-                                      for c,n in codepoint2name.iteritems()])
+                                      for c,n in codepoint2name.items()])
         self.name2codepoint = name2codepoint
 
     def escape_entities(self, text):
@@ -71,7 +79,10 @@ class XMLEntityEscaper(object):
 
         Only characters corresponding to a named entity are replaced.
         """
-        return unicode(text).translate(self.codepoint2entity)
+        if sys.version_info[:2] < (3, 0):
+            return unicode(text).translate(self.codepoint2entity)
+        else:
+            return str(text)
 
     def __escape(self, m):
         codepoint = ord(m.group())
@@ -92,7 +103,11 @@ class XMLEntityEscaper(object):
 
         The return value is guaranteed to be ASCII.
         """
-        return self.__escapable.sub(self.__escape, unicode(text)
+        if sys.version_info[:2] < (3, 0):
+            return self.__escapable.sub(self.__escape, unicode(text)
+                                    ).encode('ascii')
+        else:
+            return self.__escapable.sub(self.__escape, str(text)
                                     ).encode('ascii')
 
     # XXX: This regexp will not match all valid XML entity names__.
@@ -117,7 +132,10 @@ class XMLEntityEscaper(object):
             # U+FFFD = "REPLACEMENT CHARACTER"
         if codepoint < 128:
             return chr(codepoint)
-        return unichr(codepoint)
+        if sys.version_info[:2] < (3, 0):
+            return unichr(codepoint)
+        else:
+            return chr(codepoint)
    
     def unescape(self, text):
         """Unescape character references.
@@ -149,7 +167,9 @@ def htmlentityreplace_errors(ex):
         # Handle encoding errors
         bad_text = ex.object[ex.start:ex.end]
         text = _html_entities_escaper.escape(bad_text)
-        return (unicode(text), ex.end)
+        if sys.version_info[:2] < (3, 0):
+            return (unicode(text), ex.end)
+        return (str(text), ex.end)
     raise ex
 
 codecs.register_error('htmlentityreplace', htmlentityreplace_errors)

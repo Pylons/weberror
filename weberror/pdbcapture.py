@@ -66,7 +66,7 @@ class PdbCapture(object):
             resp = state['response']
             return resp(environ, start_response)
         if 'exc_info' in state:
-            raise state['exc_info'][0], state['exc_info'][1], state['exc_info'][2]
+            raise Exception(state['exc_info'][0], state['exc_info'][1], state['exc_info'][2])
         self.states[id] = state
         tmpl = self.get_template('pdbcapture_response.html')
         body = tmpl.substitute(req=req, state=state, id=id)

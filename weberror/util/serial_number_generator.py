@@ -7,6 +7,7 @@ avoiding ambiguous numbers and letters.  hash_identifier can be used
 to create compact representations that are unique for a certain string
 (or concatenation of strings)
 """
+import sys
 
 try:
     from hashlib import md5
@@ -19,8 +20,12 @@ base = len(good_characters)
 
 def lazy_result(return_type, dummy_initial=None):
     """Decorator to allow for on-demand evaluation (limited scope of use!)"""
-    if not issubclass(return_type, basestring):
-        raise NotImplementedError
+    if sys.version_info[:2] < (3, 0):
+        if not issubclass(return_type, basestring):
+            raise NotImplementedError
+    else:
+        if not issubclass(return_type, str):
+            raise NotImplementedError
 
     class _lazy_class(return_type):
         """lazified access to value of %s type""" % return_type.__name__
@@ -41,7 +46,8 @@ def lazy_result(return_type, dummy_initial=None):
     # not everything implemented (and will never be 100%)
     _lazy_class.__str__ = lambda self: str(self())
     _lazy_class.__repr__ = lambda self: repr(self())
-    _lazy_class.__cmp__ = lambda self, other: cmp(self(), other)
+    if sys.version_info[:2] < (3, 0):
+        _lazy_class.__cmp__ = lambda self, other: cmp(self(), other)
     _lazy_class.__getslice__ = lambda self, **kws: slice(self(), **kws)
 
     def _generating_lazy_class(generator):
@@ -54,10 +60,12 @@ def make_identifier(number):
     """
     Encodes a number as an identifier.
     """
-    if not isinstance(number, (int, long)):
-        raise ValueError(
-            "You can only make identifiers out of integers (not %r)"
-            % number)
+    if sys.version_info[:2] < (3, 0):
+        if not isinstance(number, (int, long)):
+            raise ValueError("You can only make identifiers out of integers (not %r)" % number)
+    else:
+        if not isinstance(number, int):
+            raise ValueError("You can only make identifiers out of integers (not %r)" % number)
     if number < 0:
         raise ValueError(
             "You cannot make identifiers out of negative numbers: %r"
@@ -90,11 +98,15 @@ def hash_identifier(s, length, pad=True, hasher=md5, prefix='',
         # Accept sha/md5 modules as well as callables
         hasher = hasher.new
     if length > 26 and hasher is md5:
-        raise ValueError, (
+        raise ValueError(
             "md5 cannot create hashes longer than 26 characters in "
             "length (you gave %s)" % length)
-    if isinstance(s, unicode):
-        s = s.encode('utf-8')
+    if sys.version_info[:2] < (3, 0):
+        if isinstance(s, unicode):
+            s = s.encode('utf-8')
+    else:
+        if isinstance(s, str):
+            s = s.encode('utf-8')
     h = hasher(str(s))
     bin_hash = h.digest()
     modulo = base ** length

@@ -23,10 +23,13 @@ supplements
 import sys
 import traceback
 import time
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+if sys.version_info[:2] < (3, 0):
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+else:
+    from io import StringIO
 import linecache
 from weberror.util import source_encoding, serial_number_generator
 
@@ -380,7 +383,10 @@ class ExceptionCollector(object):
             return str(obj)
         except UnicodeEncodeError:
             try:
-                return unicode(obj).encode(FALLBACK_ENCODING, 'replace')
+                if sys.version_info[:2] < (3, 0):
+                    return unicode(obj).encode(FALLBACK_ENCODING, 'replace')
+                else:
+                    return str(obj).encode(FALLBACK_ENCODING, 'replace')
             except UnicodeEncodeError:
                 # This is when something is really messed up, but this can
                 # happen when the __str__ of an object has to handle unicode

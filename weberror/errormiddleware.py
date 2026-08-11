@@ -7,15 +7,19 @@ Error handler middleware
 import sys
 import traceback
 import cgi
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 from weberror import formatter, collector, reporter
 from paste import wsgilib
 from paste import request
 from paste.util import import_string
 import types
+
+if sys.version_info[:2] < (3, 0):
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+else:
+    from io import StringIO
 
 __all__ = ['ErrorMiddleware', 'handle_exception']
 
